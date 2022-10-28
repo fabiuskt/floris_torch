@@ -1,0 +1,631 @@
+Results:
+WPGNN prediction  0
+yaws  [[0.0018351078033447266], [0.0019352138042449951], [0.03375053405761719], [0.0331854522228241]]
+Total batch loss = -4004.754883
+Turbine power loss = -4004.754883, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  0
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -4004.718262
+Turbine power loss = -4004.718262, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([0.], grad_fn=<SelectBackward0>)
+WPGNN prediction  1
+yaws  [[3.635883331298828e-06], [0.0003274381160736084], [0.764859676361084], [0.7599163055419922]]
+Total batch loss = -5541.386719
+Turbine power loss = -5541.386719, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  1
+yaws  [[0.0], [0.0], [0.75], [0.75]]
+Total batch loss = -5541.281250
+Turbine power loss = -5541.281250, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([9.2051], grad_fn=<SelectBackward0>)
+WPGNN prediction  2
+yaws  [[0.0010406970977783203], [0.0011442899703979492], [0.213023841381073], [0.2131139636039734]]
+Total batch loss = -6579.224609
+Turbine power loss = -6579.224609, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  2
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6550.825195
+Turbine power loss = -6550.825195, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([18.4103], grad_fn=<SelectBackward0>)
+WPGNN prediction  3
+yaws  [[-0.000153273344039917], [-4.595518112182617e-05], [2.0205974578857422e-05], [0.00012761354446411133]]
+Total batch loss = -6760.179199
+Turbine power loss = -6760.179688, 
+Yaw violation loss   = 0.000498, 
+
+Floris Opt,  3
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6760.178711
+Turbine power loss = -6760.178711, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([27.6154], grad_fn=<SelectBackward0>)
+WPGNN prediction  4
+yaws  [[-0.00022767484188079834], [-0.00012022256851196289], [-5.391240119934082e-05], [5.334615707397461e-05]]
+Total batch loss = -6765.274902
+Turbine power loss = -6765.275879, 
+Yaw violation loss   = 0.001005, 
+
+Floris Opt,  4
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6765.275879
+Turbine power loss = -6765.275879, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([36.8205], grad_fn=<SelectBackward0>)
+WPGNN prediction  5
+yaws  [[0.0008785724639892578], [-0.0001615583896636963], [-9.524822235107422e-05], [0.0022808462381362915]]
+Total batch loss = -6765.275879
+Turbine power loss = -6765.276367, 
+Yaw violation loss   = 0.000642, 
+
+Floris Opt,  5
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6765.277832
+Turbine power loss = -6765.277832, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([46.0256], grad_fn=<SelectBackward0>)
+WPGNN prediction  6
+yaws  [[0.0006242543458938599], [-0.00016866624355316162], [-0.0001023411750793457], [-0.0016000717878341675]]
+Total batch loss = -6625.638672
+Turbine power loss = -6625.643555, 
+Yaw violation loss   = 0.004678, 
+
+Floris Opt,  6
+yaws  [[0.0], [0.0], [0.0], [-0.25]]
+Total batch loss = -6625.019043
+Turbine power loss = -6625.644043, 
+Yaw violation loss   = 0.625000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([55.2308], grad_fn=<SelectBackward0>)
+WPGNN prediction  7
+yaws  [[0.00021354854106903076], [-0.0001414865255355835], [-7.520616054534912e-05], [0.9347755908966064]]
+Total batch loss = -5933.748047
+Turbine power loss = -5933.748535, 
+Yaw violation loss   = 0.000542, 
+
+Floris Opt,  7
+yaws  [[0.0], [0.0], [0.0], [0.9375]]
+Total batch loss = -5933.742188
+Turbine power loss = -5933.742188, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([64.4359], grad_fn=<SelectBackward0>)
+WPGNN prediction  8
+yaws  [[0.00017011165618896484], [0.015955671668052673], [0.00020301342010498047], [0.12193170189857483]]
+Total batch loss = -6731.428711
+Turbine power loss = -6731.428711, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  8
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6724.892090
+Turbine power loss = -6724.892090, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([73.6410], grad_fn=<SelectBackward0>)
+WPGNN prediction  9
+yaws  [[-0.0004392564296722412], [-0.021626800298690796], [0.0008737146854400635], [-0.0007407516241073608]]
+Total batch loss = -6115.150879
+Turbine power loss = -6115.208008, 
+Yaw violation loss   = 0.057017, 
+
+Floris Opt,  9
+yaws  [[0.0], [-0.5], [0.0], [-0.5]]
+Total batch loss = -6112.708008
+Turbine power loss = -6115.208008, 
+Yaw violation loss   = 2.500000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([82.8462], grad_fn=<SelectBackward0>)
+WPGNN prediction  10
+yaws  [[0.001003846526145935], [0.9787484407424927], [0.0009611248970031738], [1.0066157579421997]]
+Total batch loss = -5254.459961
+Turbine power loss = -5254.476562, 
+Yaw violation loss   = 0.016539, 
+
+Floris Opt,  10
+yaws  [[0.0], [1.0], [0.0], [1.0]]
+Total batch loss = -5254.499512
+Turbine power loss = -5254.499512, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([92.0513], grad_fn=<SelectBackward0>)
+WPGNN prediction  11
+yaws  [[-0.00011077523231506348], [0.1298026144504547], [0.0007873475551605225], [0.12797237932682037]]
+Total batch loss = -6703.437012
+Turbine power loss = -6703.437500, 
+Yaw violation loss   = 0.000277, 
+
+Floris Opt,  11
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6691.701172
+Turbine power loss = -6691.701172, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([101.2564], grad_fn=<SelectBackward0>)
+WPGNN prediction  12
+yaws  [[0.0003591477870941162], [-0.002212315797805786], [0.0018631219863891602], [0.0008111447095870972]]
+Total batch loss = -6400.710449
+Turbine power loss = -6400.715820, 
+Yaw violation loss   = 0.005531, 
+
+Floris Opt,  12
+yaws  [[0.0], [-0.5], [0.0], [0.0]]
+Total batch loss = -6399.466797
+Turbine power loss = -6400.716797, 
+Yaw violation loss   = 1.250000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([110.4615], grad_fn=<SelectBackward0>)
+WPGNN prediction  13
+yaws  [[0.0005364418029785156], [0.8270432949066162], [0.0013776421546936035], [0.0008548200130462646]]
+Total batch loss = -6231.597168
+Turbine power loss = -6231.597168, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  13
+yaws  [[0.0], [0.8125], [0.0], [0.0]]
+Total batch loss = -6231.470215
+Turbine power loss = -6231.470215, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([119.6667], grad_fn=<SelectBackward0>)
+WPGNN prediction  14
+yaws  [[0.0007393062114715576], [0.04269412159919739], [5.2601099014282227e-05], [0.0010203570127487183]]
+Total batch loss = -6758.194824
+Turbine power loss = -6758.194824, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  14
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6757.742188
+Turbine power loss = -6757.742188, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([128.8718], grad_fn=<SelectBackward0>)
+WPGNN prediction  15
+yaws  [[0.0009503364562988281], [0.0010576844215393066], [0.001123875379562378], [0.0012312829494476318]]
+Total batch loss = -6765.304688
+Turbine power loss = -6765.304688, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  15
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6765.305664
+Turbine power loss = -6765.305664, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([138.0769], grad_fn=<SelectBackward0>)
+WPGNN prediction  16
+yaws  [[0.0011640489101409912], [0.0012714266777038574], [0.0013377368450164795], [0.0014450550079345703]]
+Total batch loss = -6764.952148
+Turbine power loss = -6764.952148, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  16
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6764.954102
+Turbine power loss = -6764.954102, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([147.2821], grad_fn=<SelectBackward0>)
+WPGNN prediction  17
+yaws  [[0.001374959945678711], [0.0014823079109191895], [0.0015485882759094238], [0.0016560107469558716]]
+Total batch loss = -6732.454590
+Turbine power loss = -6732.454590, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  17
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6732.532715
+Turbine power loss = -6732.532715, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([156.4872], grad_fn=<SelectBackward0>)
+WPGNN prediction  18
+yaws  [[-0.011759310960769653], [-0.012855738401412964], [0.001833900809288025], [0.00198209285736084]]
+Total batch loss = -6110.843262
+Turbine power loss = -6110.904785, 
+Yaw violation loss   = 0.061538, 
+
+Floris Opt,  18
+yaws  [[-0.5], [-0.5], [0.0], [0.0]]
+Total batch loss = -6108.406250
+Turbine power loss = -6110.906250, 
+Yaw violation loss   = 2.500000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([165.6923], grad_fn=<SelectBackward0>)
+WPGNN prediction  19
+yaws  [[-0.003290131688117981], [-0.001450568437576294], [0.0042417943477630615], [0.004440054297447205]]
+Total batch loss = -4453.130859
+Turbine power loss = -4453.142578, 
+Yaw violation loss   = 0.011852, 
+
+Floris Opt,  19
+yaws  [[-0.9375], [-0.9375], [0.0], [0.0]]
+Total batch loss = -4448.458984
+Turbine power loss = -4453.146484, 
+Yaw violation loss   = 4.687500, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([174.8974], grad_fn=<SelectBackward0>)
+WPGNN prediction  20
+yaws  [[0.86725252866745], [0.8652195334434509], [-2.41696834564209e-05], [7.68899917602539e-06]]
+Total batch loss = -4610.657715
+Turbine power loss = -4610.657715, 
+Yaw violation loss   = 0.000060, 
+
+Floris Opt,  20
+yaws  [[0.8125], [0.8125], [0.0], [0.0]]
+Total batch loss = -4608.540039
+Turbine power loss = -4608.540039, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([184.1026], grad_fn=<SelectBackward0>)
+WPGNN prediction  21
+yaws  [[0.5376295447349548], [0.5408918857574463], [0.0005968213081359863], [0.0005956888198852539]]
+Total batch loss = -6134.672363
+Turbine power loss = -6134.672363, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  21
+yaws  [[0.5], [0.5], [0.0], [0.0]]
+Total batch loss = -6133.467285
+Turbine power loss = -6133.467285, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([193.3077], grad_fn=<SelectBackward0>)
+WPGNN prediction  22
+yaws  [[0.002206861972808838], [0.0023141950368881226], [0.0023804306983947754], [0.0024879872798919678]]
+Total batch loss = -6716.214355
+Turbine power loss = -6716.214355, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  22
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6716.051270
+Turbine power loss = -6716.051270, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([202.5128], grad_fn=<SelectBackward0>)
+WPGNN prediction  23
+yaws  [[0.0022986531257629395], [0.0024058520793914795], [0.0024722665548324585], [0.0025796592235565186]]
+Total batch loss = -6764.688965
+Turbine power loss = -6764.688965, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  23
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6764.693359
+Turbine power loss = -6764.693359, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([211.7179], grad_fn=<SelectBackward0>)
+WPGNN prediction  24
+yaws  [[0.002358347177505493], [0.0024657398462295532], [0.0025320351123809814], [0.002639293670654297]]
+Total batch loss = -6765.297363
+Turbine power loss = -6765.297363, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  24
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6765.304688
+Turbine power loss = -6765.304688, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([220.9231], grad_fn=<SelectBackward0>)
+WPGNN prediction  25
+yaws  [[-0.03290778398513794], [0.002491891384124756], [0.0025581419467926025], [0.0016548633575439453]]
+Total batch loss = -6762.198242
+Turbine power loss = -6762.280273, 
+Yaw violation loss   = 0.082269, 
+
+Floris Opt,  25
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6762.284668
+Turbine power loss = -6762.284668, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([230.1282], grad_fn=<SelectBackward0>)
+WPGNN prediction  26
+yaws  [[-0.035988032817840576], [0.002483680844306946], [0.0025499165058135986], [0.0022772252559661865]]
+Total batch loss = -6102.383789
+Turbine power loss = -6102.473633, 
+Yaw violation loss   = 0.089970, 
+
+Floris Opt,  26
+yaws  [[-0.75], [0.0], [0.0], [0.0]]
+Total batch loss = -6100.602539
+Turbine power loss = -6102.477539, 
+Yaw violation loss   = 1.875000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([239.3333], grad_fn=<SelectBackward0>)
+WPGNN prediction  27
+yaws  [[0.655373752117157], [0.002441391348838806], [0.0025077760219573975], [0.0017641186714172363]]
+Total batch loss = -6456.625000
+Turbine power loss = -6456.625000, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  27
+yaws  [[0.625], [0.0], [0.0], [0.0]]
+Total batch loss = -6456.096680
+Turbine power loss = -6456.096680, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([248.5385], grad_fn=<SelectBackward0>)
+WPGNN prediction  28
+yaws  [[-0.0646115243434906], [0.0014492273330688477], [-0.0851190984249115], [0.0010500699281692505]]
+Total batch loss = -6728.070801
+Turbine power loss = -6728.445312, 
+Yaw violation loss   = 0.374327, 
+
+Floris Opt,  28
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6728.446289
+Turbine power loss = -6728.446289, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([257.7436], grad_fn=<SelectBackward0>)
+WPGNN prediction  29
+yaws  [[-0.006091281771659851], [0.001232147216796875], [-0.009134471416473389], [0.0013967454433441162]]
+Total batch loss = -4937.281738
+Turbine power loss = -4937.319824, 
+Yaw violation loss   = 0.038064, 
+
+Floris Opt,  29
+yaws  [[-0.9375], [0.0], [-0.9375], [0.0]]
+Total batch loss = -4932.632812
+Turbine power loss = -4937.320312, 
+Yaw violation loss   = 4.687500, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([266.9487], grad_fn=<SelectBackward0>)
+WPGNN prediction  30
+yaws  [[0.6193630695343018], [0.0010325312614440918], [0.6092842817306519], [0.0011803507804870605]]
+Total batch loss = -6210.299805
+Turbine power loss = -6210.299805, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  30
+yaws  [[0.625], [0.0], [0.625], [0.0]]
+Total batch loss = -6210.242676
+Turbine power loss = -6210.242676, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([276.1538], grad_fn=<SelectBackward0>)
+WPGNN prediction  31
+yaws  [[0.005799740552902222], [5.429983139038086e-05], [-0.00027811527252197266], [0.0016199350357055664]]
+Total batch loss = -6744.263184
+Turbine power loss = -6744.263672, 
+Yaw violation loss   = 0.000695, 
+
+Floris Opt,  31
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6744.250977
+Turbine power loss = -6744.250977, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([285.3590], grad_fn=<SelectBackward0>)
+WPGNN prediction  32
+yaws  [[0.00167885422706604], [0.0008303523063659668], [-0.08111566305160522], [0.001959890127182007]]
+Total batch loss = -5813.374512
+Turbine power loss = -5813.577148, 
+Yaw violation loss   = 0.202789, 
+
+Floris Opt,  32
+yaws  [[0.0], [0.0], [-0.9375], [0.0]]
+Total batch loss = -5811.235352
+Turbine power loss = -5813.579102, 
+Yaw violation loss   = 2.343750, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([294.5641], grad_fn=<SelectBackward0>)
+WPGNN prediction  33
+yaws  [[0.0014827996492385864], [0.00046262145042419434], [0.41974401473999023], [0.0017637312412261963]]
+Total batch loss = -6617.507812
+Turbine power loss = -6617.507812, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  33
+yaws  [[0.0], [0.0], [0.375], [0.0]]
+Total batch loss = -6616.699219
+Turbine power loss = -6616.699219, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([303.7692], grad_fn=<SelectBackward0>)
+WPGNN prediction  34
+yaws  [[0.0012754350900650024], [0.0010353922843933105], [0.004411667585372925], [0.0015565752983093262]]
+Total batch loss = -6765.198242
+Turbine power loss = -6765.198242, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  34
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6765.203613
+Turbine power loss = -6765.203613, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([312.9744], grad_fn=<SelectBackward0>)
+WPGNN prediction  35
+yaws  [[0.0010626614093780518], [0.001170039176940918], [0.001236259937286377], [0.0013436079025268555]]
+Total batch loss = -6765.288574
+Turbine power loss = -6765.288574, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  35
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6765.289551
+Turbine power loss = -6765.289551, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([322.1795], grad_fn=<SelectBackward0>)
+WPGNN prediction  36
+yaws  [[0.0008494555950164795], [0.0009569525718688965], [0.0010230541229248047], [0.001130521297454834]]
+Total batch loss = -6762.170898
+Turbine power loss = -6762.170898, 
+Yaw violation loss   = 0.000000, 
+
+Floris Opt,  36
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6762.178223
+Turbine power loss = -6762.178223, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([331.3846], grad_fn=<SelectBackward0>)
+WPGNN prediction  37
+yaws  [[-0.0007298439741134644], [-0.0006406307220458984], [-0.0037508606910705566], [-0.00016385316848754883]]
+Total batch loss = -6610.783691
+Turbine power loss = -6610.796875, 
+Yaw violation loss   = 0.013213, 
+
+Floris Opt,  37
+yaws  [[0.0], [0.0], [0.0], [0.0]]
+Total batch loss = -6610.796875
+Turbine power loss = -6610.796875, 
+Yaw violation loss   = 0.000000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([340.5898], grad_fn=<SelectBackward0>)
+WPGNN prediction  38
+yaws  [[-0.0007810890674591064], [-0.0006915926933288574], [-0.055080294609069824], [-0.05141383409500122]]
+Total batch loss = -5406.835938
+Turbine power loss = -5407.105957, 
+Yaw violation loss   = 0.269917, 
+
+Floris Opt,  38
+yaws  [[0.0], [0.0], [-0.75], [-0.75]]
+Total batch loss = -5403.355957
+Turbine power loss = -5407.105957, 
+Yaw violation loss   = 3.750000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([349.7949], grad_fn=<SelectBackward0>)
+WPGNN prediction  39
+yaws  [[0.001304537057876587], [0.0013991594314575195], [-7.662177085876465e-05], [-0.00013881921768188477]]
+Total batch loss = -4024.464844
+Turbine power loss = -4024.465332, 
+Yaw violation loss   = 0.000539, 
+
+Floris Opt,  39
+yaws  [[0.0], [0.0], [-0.625], [-0.625]]
+Total batch loss = -4021.340820
+Turbine power loss = -4024.465820, 
+Yaw violation loss   = 3.125000, 
+
+ws tensor([8.], grad_fn=<SelectBackward0>)
+wd tensor([359.], grad_fn=<SelectBackward0>)
+0 tensor([[2, 3],
+        [0, 1]])
+1 tensor([[2, 3],
+        [0, 1]])
+2 tensor([[2, 3],
+        [0, 1]])
+3 tensor([], size=(2, 0), dtype=torch.int64)
+4 tensor([], size=(2, 0), dtype=torch.int64)
+5 tensor([[3],
+        [0]])
+6 tensor([[3],
+        [0]])
+7 tensor([[3],
+        [0]])
+8 tensor([[1, 3, 3],
+        [0, 0, 2]])
+9 tensor([[1, 3, 3],
+        [0, 0, 2]])
+10 tensor([[1, 3],
+        [0, 2]])
+11 tensor([[1, 1, 3],
+        [0, 2, 2]])
+12 tensor([[1],
+        [2]])
+13 tensor([[1],
+        [2]])
+14 tensor([[1],
+        [2]])
+15 tensor([], size=(2, 0), dtype=torch.int64)
+16 tensor([], size=(2, 0), dtype=torch.int64)
+17 tensor([], size=(2, 0), dtype=torch.int64)
+18 tensor([[0, 1],
+        [2, 3]])
+19 tensor([[0, 1],
+        [2, 3]])
+20 tensor([[0, 1],
+        [2, 3]])
+21 tensor([[0, 1],
+        [2, 3]])
+22 tensor([], size=(2, 0), dtype=torch.int64)
+23 tensor([], size=(2, 0), dtype=torch.int64)
+24 tensor([], size=(2, 0), dtype=torch.int64)
+25 tensor([[0],
+        [3]])
+26 tensor([[0],
+        [3]])
+27 tensor([[0],
+        [3]])
+28 tensor([[0, 0, 2],
+        [1, 3, 3]])
+29 tensor([[0, 2],
+        [1, 3]])
+30 tensor([[0, 2],
+        [1, 3]])
+31 tensor([[0, 2, 2],
+        [1, 1, 3]])
+32 tensor([[2],
+        [1]])
+33 tensor([[2],
+        [1]])
+34 tensor([[2],
+        [1]])
+35 tensor([], size=(2, 0), dtype=torch.int64)
+36 tensor([], size=(2, 0), dtype=torch.int64)
+37 tensor([[2, 3],
+        [0, 1]])
+38 tensor([[2, 3],
+        [0, 1]])
+39 tensor([[2, 3],
+        [0, 1]])

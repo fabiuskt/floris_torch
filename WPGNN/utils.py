@@ -1,8 +1,11 @@
 import copy
+import re
 import h5py
 import numpy as np
 import torch
 from torch_geometric.data import Data
+from playgen import PLayGen
+
 np.seterr(invalid='ignore')
 
 
@@ -77,6 +80,33 @@ def norm_data(xx=None, ff=None, scale_factors=None):
     elif (N_f > 0):
         return f, scale_factors
 
+
+def norm_data_pyg(xx=None, uu=None, ff=None, ffu=None, scale_factors=None):
+    x, u, f, fu = copy.deepcopy(xx), copy.deepcopy(uu), copy.deepcopy(ff), copy.deepcopy(ffu)
+    
+    if(x is not None):
+        for i in range(len(x)):
+            x[i].edge_attr = (x[i].edge_attr - scale_factors['x_edges'][:, 0])/scale_factors['x_edges'][:, 1]
+            x[i].x = (x[i].x - scale_factors['x_nodes'][:, 0])/scale_factors['x_nodes'][:, 1]
+
+            u[i]= (u[i] - scale_factors['x_globals'][:, 0])/scale_factors['x_globals'][:, 1]
+
+    if(f is not None):
+        for i in range(len(f)):
+            f[i].x = (x[i].x - scale_factors['f_nodes'][:, 0])/scale_factors['f_nodes'][:, 1]
+            fu[i] = (fu[i] - scale_factors['f_globals'][:, 0])/scale_factors['f_globals'][:, 1]
+
+    outputs = []
+    if(x is not None):
+        outputs.append(x)
+    if(u is not None):
+        outputs.append(u)
+    if(f is not None):
+        outputs.append(f)
+    if(fu is not None):
+        outputs.append(fu)
+    return outputs
+
 def unnorm_data(xx=None, ff=None, scale_factors=None):
     x, f = copy.deepcopy(xx), copy.deepcopy(ff)
 
@@ -101,6 +131,18 @@ def unnorm_data(xx=None, ff=None, scale_factors=None):
         return x
     elif (N_f > 0):
         return f
+
+
+def unnorm_coordinates(xx, scale_factors=None):
+    if scale_factors is None:
+        scale_factors = {'x_nodes': torch.as_tensor([[0., 75000.], [0., 85000.]], dtype=torch.float32)}
+
+    x = copy.deepcopy(xx)
+
+    x = scale_factors['x_nodes'][:, 1]*x + scale_factors['x_nodes'][:, 0]
+
+    return x
+
 
 def speed_to_velocity(xx):
     x = np.atleast_2d(copy.deepcopy(xx))
@@ -158,3 +200,56 @@ def identify_edges(x_loc, wind_dir, cone_deg=15):
     edges = x_rel[senders, receivers, :]
 
     return edges, senders, receivers
+
+
+
+def identify_edges_pyg(x_loc, wind_dir, cone_deg=20):
+    edges, senders, receivers = identify_edges(x_loc, wind_dir, cone_deg)
+    edge_attr = torch.as_tensor(edges, dtype=torch.float32)
+    edge_index = torch.as_tensor(np.asarray([senders,receivers]))
+    return edge_attr, edge_index
+
+
+
+def create_PyG_dataset(size=10):
+    #wind_speed, wind_direction = np.linspace(10, 20, 21), np.linspace(0, 360, 73)
+    wind_speed, wind_direction = np.linspace(8, 10, 1), np.linspace(0, 359, 40)
+
+    turb_intensity = 0.08
+    dataset = []
+    u = []
+    generator = PLayGen(N_turbs=4)
+    count = 0
+    wss = []
+    wds = []
+    for i in range(size):
+        xy = generator()
+
+        # 2x2 layout
+        if i == 0: 
+            turbine_diameter = 126.0
+            x_coord = torch.tensor([0., 6.*turbine_diameter, 0., 6.*turbine_diameter], dtype=torch.float32).reshape(4,1)
+            y_coord = torch.tensor([0., 0., 3.*turbine_diameter, 3.*turbine_diameter], dtype=torch.float32).reshape(4,1)
+            xy = torch.cat((x_coord, y_coord), 1).detach().numpy()
+
+        # 3x3 layout
+        #if i == 0: 
+        #    turbine_diameter = 126.0
+        #    x_coord = torch.tensor([0., 6.*turbine_diameter, 12.*turbine_diameter, 0., 6.*turbine_diameter, 12.*turbine_diameter, 0., 6.*turbine_diameter, 12.*turbine_diameter], dtype=torch.float32).reshape(9,1)
+        #    y_coord = torch.tensor([0., 0., 0,  3.*turbine_diameter, 3.*turbine_diameter, 3.*turbine_diameter, 6.*turbine_diameter, 6.*turbine_diameter, 6.*turbine_diameter], dtype=torch.float32).reshape(9,1)
+        #    xy = torch.cat((x_coord, y_coord), 1).detach().numpy()
+        for ws in wind_speed:
+            for wd in wind_direction:
+                uv = speed_to_velocity([ws, wd])
+                edge_attr, edge_index = identify_edges_pyg(xy, wd)
+                u.append([uv[0],uv[1],turb_intensity])
+                x = torch.as_tensor(xy, dtype=torch.float32)
+                dataset.append(Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=count))
+                wss.append([ws])
+                wds.append([wd])
+                count += 1
+    
+    u = torch.tensor(np.asarray(u), dtype=torch.float32)
+    wss = torch.tensor(np.asarray(wss), dtype=torch.float32, requires_grad=True)
+    wds = torch.tensor(np.asarray(wds), dtype=torch.float32, requires_grad=True)
+    return [dataset, u, wss, wds]
