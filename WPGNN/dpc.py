@@ -37,5 +37,5 @@ dataset, u ,wss, wds = utils.create_PyG_dataset(1)
 normed_data, normed_u = utils.norm_data_pyg(xx=dataset, uu=u, scale_factors=scale_factors)
 dataset = [normed_data, normed_u, wss, wds]
 model.fitDPC(dataset, learning_rate=0.00001  , batch_size=40  ,
-          epochs=100, decay_rate=1.0,print_every=20, save_every=100,
+          epochs=1, decay_rate=1.0,print_every=20, save_every=100,
           save_model_path=save_model_path)

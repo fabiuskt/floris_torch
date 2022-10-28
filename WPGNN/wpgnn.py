@@ -634,8 +634,8 @@ def test(x,y, wind_directions, wind_speeds):
 
     yaw_opt = YawOptimizationSR(
             fi=fi,
-            minimum_yaw_angle=-25.0,  # Allowable yaw angles lower bound
-            maximum_yaw_angle=25.0,  # Allowable yaw angles upper bound
+            minimum_yaw_angle=umin.tolist()[0],  # Allowable yaw angles lower bound
+            maximum_yaw_angle=umax.tolist()[0],  # Allowable yaw angles upper bound
             Ny_passes=[5, 4],
             exclude_downstream_turbines=True,
             exploit_layout_symmetry=True,
