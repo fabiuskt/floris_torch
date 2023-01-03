@@ -29,13 +29,13 @@ scale_factors = {'x_globals': torch.as_tensor([[0., 25.], [0., 25.], [0.09, 0.03
                    'f_edges': torch.as_tensor([[0., 0.]], dtype=torch.float32)}
 
 
-save_model_path = 'example_training_wd'
-load_path = save_model_path+'/{0:05d}'.format(100)+'/wpgnn.h5'
+save_model_path = 'example_training_batch_norm'
+load_path = save_model_path+'/{0:05d}'.format(500)+'/wpgnn.h5'
 model = WPGNN(eN=eN, nN=nN, gN=gN,graph_size=graph_size, model_path=load_path)
 
 dataset, u ,wss, wds = utils.create_PyG_dataset(1)
 normed_data, normed_u = utils.norm_data_pyg(xx=dataset, uu=u, scale_factors=scale_factors)
 dataset = [normed_data, normed_u, wss, wds]
 model.fitDPC(dataset, learning_rate=0.00001  , batch_size=40  ,
-          epochs=1, decay_rate=1.0,print_every=20, save_every=100,
+          epochs=500, decay_rate=1.0,print_every=20, save_every=100,
           save_model_path=save_model_path)

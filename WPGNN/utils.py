@@ -226,18 +226,18 @@ def create_PyG_dataset(size=10):
         xy = generator()
 
         # 2x2 layout
-        if i == 0: 
-            turbine_diameter = 126.0
-            x_coord = torch.tensor([0., 6.*turbine_diameter, 0., 6.*turbine_diameter], dtype=torch.float32).reshape(4,1)
-            y_coord = torch.tensor([0., 0., 3.*turbine_diameter, 3.*turbine_diameter], dtype=torch.float32).reshape(4,1)
-            xy = torch.cat((x_coord, y_coord), 1).detach().numpy()
-
-        # 3x3 layout
         #if i == 0: 
         #    turbine_diameter = 126.0
-        #    x_coord = torch.tensor([0., 6.*turbine_diameter, 12.*turbine_diameter, 0., 6.*turbine_diameter, 12.*turbine_diameter, 0., 6.*turbine_diameter, 12.*turbine_diameter], dtype=torch.float32).reshape(9,1)
-        #    y_coord = torch.tensor([0., 0., 0,  3.*turbine_diameter, 3.*turbine_diameter, 3.*turbine_diameter, 6.*turbine_diameter, 6.*turbine_diameter, 6.*turbine_diameter], dtype=torch.float32).reshape(9,1)
+        #    x_coord = torch.tensor([0., 6.*turbine_diameter, 0., 6.*turbine_diameter], dtype=torch.float32).reshape(4,1)
+        #    y_coord = torch.tensor([0., 0., 3.*turbine_diameter, 3.*turbine_diameter], dtype=torch.float32).reshape(4,1)
         #    xy = torch.cat((x_coord, y_coord), 1).detach().numpy()
+
+        # 3x3 layout
+        if i == 0: 
+            turbine_diameter = 126.0
+            x_coord = torch.tensor([0., 6.*turbine_diameter, 12.*turbine_diameter, 0., 6.*turbine_diameter, 12.*turbine_diameter, 0., 6.*turbine_diameter, 12.*turbine_diameter], dtype=torch.float32).reshape(9,1)
+            y_coord = torch.tensor([0., 0., 0,  3.*turbine_diameter, 3.*turbine_diameter, 3.*turbine_diameter, 6.*turbine_diameter, 6.*turbine_diameter, 6.*turbine_diameter], dtype=torch.float32).reshape(9,1)
+            xy = torch.cat((x_coord, y_coord), 1).detach().numpy()
         for ws in wind_speed:
             for wd in wind_direction:
                 uv = speed_to_velocity([ws, wd])

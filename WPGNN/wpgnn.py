@@ -17,7 +17,7 @@ import floris
 from floris.tools import FlorisInterface
 from floris.tools.optimization.yaw_optimization.yaw_optimizer_sr import YawOptimizationSR
 
-umin = torch.tensor([0]) # min allowed yaw angle (degrees)
+umin = torch.tensor([-25.]) # min allowed yaw angle (degrees)
 umax = torch.tensor([25.]) # max allowed yaw angle (degrees)
 u_penalty = 0.1
 #u_penalty = 0.001
@@ -314,6 +314,7 @@ class WPGNN(torch.nn.Module):
 
     def train_step_DPC(self, batch, u, wss, wds):
         self.optimizer.zero_grad()
+        self.train()
         x_out, edge_attr_out, u_out  = self.forward(batch.x, batch.edge_index, batch.edge_attr, u[batch.y], batch)
         loss = self.compute_loss_floris(x_out, wss[batch.y], wds[batch.y], batch)
         #mae_loss = torch.nn.L1Loss()
@@ -431,9 +432,12 @@ class WPGNN(torch.nn.Module):
         batch_iterator = iter(loader)
         batch = next(batch_iterator)
 
+        self.eval()
         x_out, edge_attr_out, u_out  = self.forward(batch.x, batch.edge_index, batch.edge_attr, u[batch.y], batch)
         
         l = self.compute_loss_floris(x_out, wss[batch.y], wds[batch.y], batch, reporting=True)
+        self.train()
+
         print('WPGNN prediction')
         print('yaws ', x_out.tolist())
         print('Total batch loss = {:.6f}'.format(l[0]))
@@ -468,8 +472,10 @@ class WPGNN(torch.nn.Module):
                 lss[co].append(t)
 
                 if (print_every > 0) and ((iters % print_every) == 0):
+                    self.eval()
                     x_out, edge_attr_out, u_out = self.forward(idx_batch.x, idx_batch.edge_index, idx_batch.edge_attr, u[idx_batch.y], idx_batch)
                     l = self.compute_loss_floris(x_out, wss[idx_batch.y], wds[idx_batch.y], idx_batch, reporting=True)
+                    self.train()
                     print('yaws ', x_out.tolist())
                     print('Total batch loss = {:.6f}'.format(l[0]))
                     print('Turbine power loss = {:.6f}, '.format(l[1]))
@@ -492,7 +498,9 @@ class WPGNN(torch.nn.Module):
             
             # Report current training/testing performance of model
             if (print_every > 0) and ((iters % print_every) == 0):
+                self.eval()
                 l = self.compute_dataset_loss_DPC(train_data, batch_size=batch_size, reporting=True)
+                self.train()
                 print('Total dataset loss = {:.6f}'.format(l[0]))
                 print('Turbine power loss = {:.6f}, '.format(l[1]))
                 print('Yaw violation loss   = {:.6f}, '.format(l[2]))
@@ -503,7 +511,9 @@ class WPGNN(torch.nn.Module):
                 ltots.append(ltots[-1])
             
             if test_data is not None:
+                self.eval()
                 l = self.compute_dataset_loss_DPC(test_data, batch_size=batch_size, reporting=True)
+                self.train()
                 print('Total batch loss = {:.6f}'.format(l[0]))
                 print('Turbine power loss = {:.6f}, '.format(l[1]))
                 print('Yaw violation loss   = {:.6f}, '.format(l[2]))
@@ -537,6 +547,7 @@ class WPGNN(torch.nn.Module):
         diffs = []
         for i, batch in enumerate(batch_iterator):
 
+            self.eval()
             x_out, edge_attr_out, u_out  = self.forward(batch.x, batch.edge_index, batch.edge_attr, u[batch.y], batch)
             unnormed = utils.unnorm_coordinates(batch.x)
             x = unnormed[:,0].detach().numpy().tolist()
@@ -572,7 +583,7 @@ class WPGNN(torch.nn.Module):
                 print('ws', wss[i], file=f)
                 print('wd', wds[i], file=f)
 
-            diffs.append(l2-l[1].detach().numpy())
+            diffs.append((l2-l[1].detach().numpy())/l2 * (-100))
 
         
         # power for test set from FLORIS model (baseline and optimized)
@@ -603,7 +614,10 @@ class WPGNN(torch.nn.Module):
         fig.set_size_inches(12,6)
         plt.show()
 
-        plt.plot(diffs)
+        angles = np.linspace(0,360,40)
+        plt.plot(angles, diffs)
+        plt.xlabel('Winddirection')
+        plt.ylabel('Energie Opt - Energie Predicted')
         plt.show()
 
 
@@ -671,7 +685,7 @@ def init_weights_zero(m):
                 for name, childLin in childModel.named_children():
                     if isinstance(childModel, mod.NodeModel) and name=='linear_out' and index==0:
                         torch.nn.init.zeros_(childLin.weight)
-                        torch.nn.init.ones_(childLin.bias)
+                        torch.nn.init.zeros_(childLin.bias)
 
                         
 
