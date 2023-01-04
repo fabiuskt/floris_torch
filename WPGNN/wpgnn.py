@@ -240,13 +240,19 @@ class WPGNN(torch.nn.Module):
 
 
     def compute_loss_floris(self, yaws, wss, wds, batch, reporting=False):
-        relu = ReLU_custom.apply
-        clipped_yaws = relu(yaws*umax-umin) + umin
+        #relu = ReLU_custom.apply
+        #clipped_yaws = relu(yaws*umax-umin) + umin
+        #TODO delete "- umin"
         #clipped_yaws = yaws*umax-umin 
 
-        relu2 = ReLU_custom.apply
-        clipped_yaws = -relu2(-clipped_yaws + umax) + umax
+
+        #relu2 = ReLU_custom.apply
+        #clipped_yaws = -relu2(-clipped_yaws + umax) + umax
         
+        yaws = torch.atan2(yaws[:,0], yaws[:,1]+0.00001)
+       # yaws = yaws[:,0] + yaws[:,1]
+        clipped_yaws = yaws * umax
+
         indices = batch.x_ptr.tolist()
         split = []
         for i in range(len(indices)-1):
@@ -571,7 +577,7 @@ class WPGNN(torch.nn.Module):
             
             l2 = l[1].detach().numpy()
 
-            l = self.compute_loss_floris(yaws, wss[batch.y], wds[batch.y], batch, reporting=True)
+            l = self.compute_loss_floris(torch.concat((torch.sin(yaws), torch.cos(yaws)),1), wss[batch.y], wds[batch.y], batch, reporting=True)
             with open('out.txt', 'a') as f:
                 print('Floris Opt, ', i, file=f)
                 print('yaws ', yaws.tolist(), file=f)
@@ -587,8 +593,6 @@ class WPGNN(torch.nn.Module):
 
         
         # power for test set from FLORIS model (baseline and optimized)
-        # FLORIS_baseline = (4483. + 2948. + 1771. + 923. + 364.)/5.
-        # FLORIS_opt = (4662. + 3094. + 1882. + 1003. + 406.)/5.
         with open('out.txt', 'a') as f:
             for i,date in enumerate(dataset):
                 print(i, date.edge_index, file=f)

@@ -115,7 +115,7 @@ class NodeModel(torch.nn.Module):
         self.add_module(name='norm_out', module=newBatchNormLayer)
 
         self.layers.append(newLinLayer)
-        self.norm_layers.append(newLinLayer)
+        self.norm_layers.append(newBatchNormLayer)
 
 
         self.aggregator = SumAggregation()
@@ -160,7 +160,10 @@ class NodeModel(torch.nn.Module):
             #    tmp = tmp_a
             #tmp = torch.sigmoid(tmp)
 
+        a = self.layers[-1]
+        test = a.forward(tmp)
         tmp = self.layers[-1](tmp)
+        tmp = self.norm_layers[-1](tmp)
         if self.output_activation == 'leaky_relu':
             tmp = torch.nn.functional.leaky_relu(tmp, negative_slope=0.2)
         elif self.output_activation == 'relu':
