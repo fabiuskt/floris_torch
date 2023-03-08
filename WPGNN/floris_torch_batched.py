@@ -132,7 +132,7 @@ class DPCModel(nn.Module):
         return u
 
 
-def get_turbine_mesh(wd, x_coord, y_coord, z_coord):
+def get_turbine_mesh(wd, ws, x_coord, y_coord, z_coord):
     y_grid = torch.zeros((len(x_coord), y_ngrid, z_ngrid))
     z_grid = torch.zeros((len(x_coord), y_ngrid, z_ngrid))
 
@@ -197,6 +197,11 @@ def get_turbine_mesh(wd, x_coord, y_coord, z_coord):
     #     mesh_z_rotated = torch.take_along_dim(mesh_z * np.ones((np.shape(mesh_x_rotated))), 
     #                                           inds_sorted, 2)
     #inds_unsorted = x_coord_rotated.argsort(axis=2)
+
+    # copy arrays for each ws
+    [x_coord_rotated, y_coord_rotated, mesh_x_rotated, mesh_y_rotated, inds_sorted] = \
+        [arr.repeat(1, ws.shape[0], 1, 1, 1) for arr in \
+        [x_coord_rotated, y_coord_rotated, mesh_x_rotated, mesh_y_rotated, inds_sorted]]
     
     return x_coord_rotated, y_coord_rotated, \
         mesh_x_rotated, mesh_y_rotated, mesh_z, \
@@ -209,7 +214,10 @@ def get_field_rotor(ws, wd, clipped_u, \
         x_coord_rotated, y_coord_rotated, 
         mesh_x_rotated, mesh_y_rotated, mesh_z, \
         inds_sorted, x_coord, y_coord):
-    ## initialize flow field ##
+## initialize flow field ##
+
+    test = ws[None, :, None, None, None] 
+
     flow_field_u_initial = (ws[None, :, None, None, None] 
                         * (mesh_z / specified_wind_height) ** wind_shear) \
                         * np.ones((len(wd), 1, 1, 1, 1))
