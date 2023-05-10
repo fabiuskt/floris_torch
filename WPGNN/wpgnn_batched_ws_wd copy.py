@@ -4,7 +4,6 @@ from meta import MetaLayer
 import modules as mod
 import numpy as np 
 from torch_geometric.loader import DataLoader
-from torch_geometric.nn.norm.batch_norm import BatchNorm
 from time import time
 import utils
 from torch_geometric.nn import SumAggregation
@@ -13,7 +12,6 @@ import os
 import floris_torch_batched
 import matplotlib.pyplot as plt
 import random
-from utils import *
 
 import floris
 
@@ -59,8 +57,7 @@ class WPGNN(torch.nn.Module):
         for i in range(self.n_layers - 1):
             dim_in = [self.eN_in, self.nN_in, self.gN_in] if i == 0 else graph_size[i-1]
             newMetaLayer = self.graph_layer(dim_in, graph_size[i],
-                                                      n_layers=10,
-                                                      hidden_dim=10,
+                                                      n_layers=5,
                                                       output_activation='leaky_relu',
                                                       layer_index=i)
             #add Module to children list such that it will be recursivly found in self.apply
@@ -243,10 +240,7 @@ class WPGNN(torch.nn.Module):
             return loss
 
 
-    def compute_loss_floris(self, yaws, wss, wds, batch, layoutBatchsize, reporting=False, rand=False):
-        if(rand):
-            s = yaws.detach().numpy().shape
-            #yaws += torch.normal(0.,0.1, s)
+    def compute_loss_floris(self, yaws, wss, wds, batch, reporting=False):
         relu = ReLU_custom.apply
         clipped_yaws = relu(yaws*umax-umin) + umin
         #clipped_yaws = yaws*umax-umin 
@@ -259,80 +253,65 @@ class WPGNN(torch.nn.Module):
         for i in range(len(indices)-1):
             split.append(indices[i+1] - indices[i])
 
-        yaws = torch.tensor_split(yaws, indices[1:-1])
+        yaws = torch.split(yaws, split)
+        yaws = torch.transpose(torch.concat(yaws,1),0,1)
+        clipped_yaws = torch.split(clipped_yaws, split)
+        clipped_yaws = torch.transpose(torch.concat(clipped_yaws,1),0,1)
+        clipped_yaws = clipped_yaws.reshape((wds.size()[0],wss.size()[0],clipped_yaws.size()[1]))
+        yaws = yaws.reshape((wds.size()[0],wss.size()[0],yaws.size()[1]))
 
-        sizeBatch = int(wds.size()[0] * wss.size()[0])
-        #sizeBatch = int(len(clipped_yaws)/layoutBatchsize)
 
-        yaws_list = tuple(yaws[e:e + sizeBatch] for e, k in enumerate(yaws) if e % sizeBatch == 0)
+        x_unnormed = utils.unnorm_coordinates(batch.x)
+        x_coord_all = torch.split(x_unnormed[:,0], split)
+        y_coord_all = torch.split(x_unnormed[:,1], split)
 
-        clipped_yaws = torch.tensor_split(clipped_yaws, indices[1:-1])
+        opt_loss = 0.
+        u_viol_loss = 0.
+        power_loss = 0.
+        power_cost = 0.
         
-        clipped_yaws_list = tuple(clipped_yaws[e:e + sizeBatch] for e, k in enumerate(yaws) if e % sizeBatch == 0)
+        set_yaw = torch.tensor([np.nan] * split[i])
+        x_coord = x_coord_all[0].reshape(split[0])
+        y_coord = y_coord_all[0].reshape(split[0])
+        z_coord = torch.tensor([90.0] * split[0])
 
-        total_cost, power_cost, u_viol_cost = torch.empty((len(clipped_yaws_list), wds.size()[0], wss.size()[0])), torch.empty((len(clipped_yaws_list), wds.size()[0], wss.size()[0])), torch.empty((len(clipped_yaws_list), wds.size()[0], wss.size()[0]))
-        opt_loss = 0
+        x_coord_rotated, y_coord_rotated, mesh_x_rotated, \
+            mesh_y_rotated, mesh_z, inds_sorted = floris_torch_batched.get_turbine_mesh(wds[:,0], wss[:,0], x_coord, y_coord, z_coord)
+        
+        #order1 = torch.arange(inds_sorted.shape[0]).unsqueeze(1)
+        order2 = inds_sorted.squeeze().reshape((wds.size()[0], wss.size()[0],clipped_yaws.size()[2]))
+
+        clipped_yaws = torch.take_along_dim(clipped_yaws, order2, axis=2) # sort
+
+        #clipped_yaws.scatter(2, order2, clipped_yaws)
 
 
-        for i_layout in range(len(clipped_yaws_list)):
-            clipped_yaws = clipped_yaws_list[i_layout]
-            yaws = yaws_list[i_layout]
-            clipped_yaws = torch.transpose(torch.concat(clipped_yaws,1),0,1)
-            clipped_yaws = clipped_yaws.reshape((wds.size()[0],wss.size()[0],clipped_yaws.size()[1]))
-            yaws = torch.transpose(torch.concat(yaws,1),0,1)
-            yaws = yaws.reshape((wds.size()[0],wss.size()[0],yaws.size()[1]))
-
-
-            x_unnormed = utils.unnorm_coordinates(batch.x)
-            #x_unnormed = batch.x
-            x_coord_all = torch.split(x_unnormed[:,0], split)[i_layout*sizeBatch:(i_layout+1)*sizeBatch]
-            y_coord_all = torch.split(x_unnormed[:,1], split)[i_layout*sizeBatch:(i_layout+1)*sizeBatch]
-            
-            set_yaw = torch.tensor([np.nan] * split[i])
-            x_coord = x_coord_all[0].reshape(split[i_layout*sizeBatch])
-            y_coord = y_coord_all[0].reshape(split[i_layout*sizeBatch])
-            z_coord = torch.tensor([90.0] * split[i_layout*sizeBatch])
-
+        flow_field_u, yaw_angle = floris_torch_batched.get_field_rotor(wss[:,0], wds[:,0], clipped_yaws, \
             x_coord_rotated, y_coord_rotated, mesh_x_rotated, \
-                mesh_y_rotated, mesh_z, inds_sorted = floris_torch_batched.get_turbine_mesh(wds[:,0], wss[:,0], x_coord, y_coord, z_coord)
-            
-            #clipped_yaws = torch.transpose(clipped_yaws,0,1)
-            #order1 = torch.arange(inds_sorted.shape[0]).unsqueeze(1)
-            order2 = inds_sorted.squeeze().reshape((wds.size()[0], wss.size()[0],clipped_yaws.size()[2]))
+            mesh_y_rotated, mesh_z, inds_sorted, x_coord, y_coord)
 
-            clipped_yaws = torch.take_along_dim(clipped_yaws, order2, axis=2) # sort
+        p = floris_torch_batched.get_power(flow_field_u, x_coord_rotated, yaw_angle)
 
-            #clipped_yaws.scatter(2, order2, clipped_yaws)
+        #flow_field_u, x_coord_rotated, yaw_angle = floris_torch.get_field_rotor(wss[i], wds[i], clipped_yaws[i].reshape(split[i]), set_yaw, x_coord, y_coord, z_coord)
+        #p = floris_torch.get_power(flow_field_u, x_coord_rotated, yaw_angle)
 
 
-            flow_field_u, yaw_angle = floris_torch_batched.get_field_rotor(wss[:,0], wds[:,0], clipped_yaws, \
-                x_coord_rotated, y_coord_rotated, mesh_x_rotated, \
-                mesh_y_rotated, mesh_z, inds_sorted, x_coord, y_coord)
+        #power_cost = -torch.log(1.0 + torch.sum(p))
+        power_cost = -torch.sum(p,2)
 
-            p = floris_torch_batched.get_power(flow_field_u, x_coord_rotated, yaw_angle)
+        power_cost = power_cost.to(torch.float32)
 
-            #flow_field_u, x_coord_rotated, yaw_angle = floris_torch.get_field_rotor(wss[i], wds[i], clipped_yaws[i].reshape(split[i]), set_yaw, x_coord, y_coord, z_coord)
-            #p = floris_torch.get_power(flow_field_u, x_coord_rotated, yaw_angle)
+        # cost from soft constraints (violating bounds on yaw angle)
+        u_viol_lower = torch.nn.functional.relu(umin - yaws*umax)
+        u_viol_upper = torch.nn.functional.relu(yaws*umax - umax)
+        u_viol_cost = u_penalty * torch.sum(torch.sqrt(u_viol_lower.pow(2) + u_viol_upper.pow(2) +1e-16),2)
 
+        # total cost
+        total_cost = u_viol_cost + power_cost
 
-            #power_cost = -torch.log(1.0 + torch.sum(p))
-            power_cost_z = -torch.sum(p,2).to(torch.float32)
+        opt_loss = torch.sum(torch.sum(total_cost))
 
-            # cost from soft constraints (violating bounds on yaw angle)
-            u_viol_lower = torch.nn.functional.relu(umin - yaws*umax)
-            u_viol_upper = torch.nn.functional.relu(yaws*umax - umax)
-            u_viol_cost_z = u_penalty * torch.sum(torch.sqrt(u_viol_lower.pow(2) + u_viol_upper.pow(2) +1e-16),2)
-
-            # total cost
-            total_cost_z = u_viol_cost_z + power_cost_z
-
-
-            total_cost[i_layout,:,:] = total_cost_z
-            u_viol_cost[i_layout,:,:] = u_viol_cost_z            
-            power_cost[i_layout,:,:] = power_cost_z         
-
-            opt_loss += torch.sum(torch.sum(total_cost_z))/(yaws.shape[0]*yaws.shape[1])
-
+        opt_loss /= yaws.shape[0]*yaws.shape[1]
 
         if reporting:
             return total_cost, power_cost, u_viol_cost 
@@ -341,11 +320,10 @@ class WPGNN(torch.nn.Module):
 
 
 
-    def train_step_DPC(self, batch, u, wss, wds, layoutBatchSize):
+    def train_step_DPC(self, batch, u, wss, wds):
         self.optimizer.zero_grad()
         x_out, edge_attr_out, u_out  = self.forward(batch.x, batch.edge_index, batch.edge_attr, u, batch)
-        #x_out = torch.tensor([[0.1],[0.2],[0.3],[0.4],[0.9],[ 1.0],[-0.1],[-0.2], [1.188],[-1.583],[0.1844],[0.2107],[0.1850],[0.2104],[1.18],[-1.5]])
-        loss = self.compute_loss_floris(x_out, wss, wds, batch, layoutBatchSize,rand=True)
+        loss = self.compute_loss_floris(x_out, wss, wds, batch)
         loss.backward()
         self.optimizer.step()
         #print_weights(self)
@@ -373,21 +351,14 @@ class WPGNN(torch.nn.Module):
 
         # Build data pipelines
         dataset, u, wss, wds = train_data
-        dataset_test, u_test, wss_test, wds_test = test_data
 
-        lss = []
+        lss = [[] for i in range(int(len(dataset)/(wsBatchSize*wdBatchSize)))]
         ltots = []
 
         # Start training process
         iters = 0
 
         previous_loss = torch.inf
-
-        
-        test_row = 2*lengthRow-1
-        test_column = 2*lengthColumn-1        
-        #test_row = lengthRow
-        #test_column = lengthColumn
 
 
         for epoch in range(1, epochs+1):
@@ -399,71 +370,27 @@ class WPGNN(torch.nn.Module):
             #        factor = pow(0.1, (10-epoch)/2)
             #        g['lr'] = learning_rate * factor
 
-            #rws = random.sample(range(lengthRow),wsBatchSize)
-            #rwd = random.sample(range(lengthColumn),wdBatchSize)
-            #rly = random.sample(range(lengthLayout),layoutBatchsize)
+            rws = random.sample(range(lengthRow),wsBatchSize)
+            rwd = random.sample(range(lengthColumn),wdBatchSize)
+            #rws = range(lengthRow)
+            #rwd = range(lengthColumn)
 
+            wsb = wss[torch.tensor(rws)*lengthColumn]
+            wdb = wds[torch.tensor(rwd)]
 
-
-
-            rws = range(lengthRow)
-            rwd = range(lengthColumn)
-            rly = range(lengthLayout)
-
-            wsb = wss[torch.tensor(rws)]
-            wdb = wds[torch.tensor(rwd)*lengthRow]
-
-            #wsb = torch.tensor(np.random.uniform(8,10,wsBatchSize).reshape((wsBatchSize,1)))
-            #wdb = torch.tensor(np.random.uniform(181,359,wdBatchSize).reshape((wdBatchSize,1)))
-
-
-            batchList = []# *(lengthColumn*lengthRow)
-            uList = [] #*(lengthColumn*lengthRow)
-
-            #batchList =[]
-            #uList = []
-            turb_intensity = 0.08
-            countup = 0
-            for j, wd in enumerate(wdb.flatten()):
-                for i, ws in enumerate(wsb.flatten()):
-                    uv = speed_to_velocity([ws, wd])
-                    x = unnorm_coordinates(dataset[0].x)
-                    edge_attr, edge_index = identify_edges_pyg(x.detach().numpy(), wd)
-                    #u_train.append([ws,wd,turb_intensity])
-
-                    #i_l = countup%(lengthColumn*lengthRow)
-                    index = i + j* lengthColumn
+            batchList = []
+            uList = []
+            for j in range(wdBatchSize):
+                for i in range(wsBatchSize):
+                    batchList.append(dataset[rws[i]+(lengthRow)*rwd[j]])
+                    uList.append(u[rws[i]+(lengthRow)*rwd[j],:].tolist())
             
+            uList = torch.as_tensor(uList)
 
-                    #batchList[index] = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=countup)
-                    batchList.append(Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=countup))
-
-                    #uList[index] = [uv[0],uv[1],turb_intensity]
-                    uList.append([uv[0],uv[1],turb_intensity])
-                    countup+=1
-
-
-            batchList = norm_data_pyg(batchList)[0]
-            uList = torch.as_tensor(uList, dtype=torch.float32) 
-
-            batchList2 = []
-            uList2 = []
-
-
-#            for l in range(layoutBatchsize):
-#                for j in range(wdBatchSize):
-#                    for i in range(wsBatchSize):
-#                        batchList2.append(dataset[rws[i]+(lengthRow)*rwd[j]+(lengthRow*lengthColumn)*rly[l]])
-#                         uList2.append(u[rws[i]+(lengthRow)*rwd[j]+(lengthRow*lengthColumn)*rly[l],:].tolist())
-
-            #uList = uList2
-            #batchList = batchList2
-            uList = torch.as_tensor(uList, dtype=torch.float32)
-
-            loader = DataLoader(batchList, batch_size=wdBatchSize*wsBatchSize*layoutBatchsize,follow_batch=['x','edge_attr'], shuffle=False) 
+            loader = DataLoader(batchList, batch_size=wdBatchSize*wsBatchSize,follow_batch=['x','edge_attr'], shuffle=False) 
 
             for co, idx_batch in enumerate(loader):
-                loss = self.train_step_DPC(idx_batch, uList, wsb, wdb, layoutBatchsize)
+                loss = self.train_step_DPC(idx_batch, uList, wsb, wdb)
                 #t = loss.detach().item()
                 #lss[co].append(t)
 
@@ -507,32 +434,45 @@ class WPGNN(torch.nn.Module):
                         batchList.append(dataset[rws[i]*(lengthRow)+rwd[j]])'''
 
                 loader = DataLoader(dataset, batch_size=wss.size()[0]*wds.size()[0],follow_batch=['x','edge_attr'], shuffle=False)
-                loader_test = DataLoader(dataset_test, batch_size=wss_test.size()[0]*wds_test.size()[0],follow_batch=['x','edge_attr'], shuffle=False)
 
-                l = self.eveluate(loader, lengthRow, lengthColumn, layoutBatchsize, u, wss, wds)      
-                l_test = self.eveluate(loader_test, test_row, test_column, layoutBatchsize, u_test, wss_test, wds_test)                
-          
-                
-                t = torch.sum(torch.sum(l[0])).detach().item() / (lengthColumn*lengthRow)
-                t_test = torch.sum(torch.sum(l_test[0])).detach().item() / ((test_row)*(test_column))
+                for co, idx_batch in enumerate(loader):
+                    ##################################here is testing in evaluation mode######################################
 
-                #t2 = torch.sum(torch.sum(l2[0])).detach().item()
+                    
+                    ##################################here is testing in training mode######################################
+                    with torch.no_grad():
+                        self.eval()
+                        x_out, edge_attr_out, u_out = self.forward(idx_batch.x, idx_batch.edge_index, idx_batch.edge_attr, u[idx_batch.y], idx_batch)
+                        self.train()
+                        x_out2, edge_attr_out2, u_out2 = self.forward(idx_batch.x, idx_batch.edge_index, idx_batch.edge_attr, u[idx_batch.y], idx_batch)
+                    
+                    
+                    ##################################calculating the losses for evalutation and trainings mode######################################
+                    l = self.compute_loss_floris(x_out, wss.reshape(lengthRow, lengthColumn)[:,0].reshape(lengthRow,1), wds[:lengthColumn,0].reshape(lengthColumn,1), idx_batch, reporting=True)
+                    l2 = self.compute_loss_floris(x_out2, wss.reshape(lengthRow, lengthColumn)[:,0].reshape(lengthRow,1), wds[:lengthColumn,0].reshape(lengthColumn,1), idx_batch, reporting=True)
+
+                    print('yaws ', x_out.tolist())
+                    print('Total batch loss = {:.6f}'.format(torch.sum(l[0])))
+                    print('Turbine power loss = {:.6f}, '.format(torch.sum(l[1])))
+                    print('Yaw violation loss   = {:.6f}, '.format(torch.sum(l[2])))
+                    print('')
+                t = torch.sum(torch.sum(l[0])).detach().item()
+                t2 = torch.sum(torch.sum(l2[0])).detach().item()
 
                 ltots.append(t)
-                #lss.append(loss.detach().numpy())
-                lss.append(t_test)
+                lss[0].append(t2)
 
             else:
                 ltots.append(ltots[-1])
-                lss.append(lss[-1])
+                lss[0].append(lss[0][-1])
 
             
-            #if test_data is not None:
-            #    l = self.compute_dataset_loss_DPC(test_data, batch_size=batch_size, reporting=True)
-            #    print('Total batch loss = {:.6f}'.format(l[0]))
-            #    print('Turbine power loss = {:.6f}, '.format(l[1]))
-            #    print('Yaw violation loss   = {:.6f}, '.format(l[2]))
-            #    print('')
+            if test_data is not None:
+                l = self.compute_dataset_loss_DPC(test_data, batch_size=batch_size, reporting=True)
+                print('Total batch loss = {:.6f}'.format(l[0]))
+                print('Turbine power loss = {:.6f}, '.format(l[1]))
+                print('Yaw violation loss   = {:.6f}, '.format(l[2]))
+                print('')
 
             if epoch%1==0:
                 for g in self.optimizer.param_groups:
@@ -563,24 +503,16 @@ class WPGNN(torch.nn.Module):
         ##########################from here it is just plotting##################################
 
 
-
-        ########changed
-        loader = DataLoader(dataset_test, batch_size=wss_test.size()[0]*wds_test.size()[0],follow_batch=['x','edge_attr'], shuffle=False)
-
+        loader = DataLoader(dataset, batch_size=wss.size()[0]*wds.size()[0],follow_batch=['x','edge_attr'], shuffle=False)
 
 
         for co, idx_batch in enumerate(loader):
             #self.eval()
-            x_out, edge_attr_out, u_out = self.forward(idx_batch.x, idx_batch.edge_index, idx_batch.edge_attr, u_test[idx_batch.y], idx_batch)
+            x_out, edge_attr_out, u_out = self.forward(idx_batch.x, idx_batch.edge_index, idx_batch.edge_attr, u[idx_batch.y], idx_batch)
             #self.train()
+            l_all = self.compute_loss_floris(x_out, wss.reshape(lengthRow, lengthColumn)[:,0].reshape(lengthRow,1), wds[:lengthColumn,0].reshape(lengthColumn,1), idx_batch, reporting=True)
 
-            wsb = wss_test[torch.tensor(range(test_row))]
-            wdb = wds_test[torch.tensor(range(test_column))*(test_row)]
-
-            ##################################calculating the losses for evalutation and trainings mode######################################
-            l_all = self.compute_loss_floris(x_out, wsb, wdb, idx_batch, layoutBatchsize, reporting=True)
-            l_all_zero = self.compute_loss_floris(x_out*0, wsb, wdb, idx_batch, layoutBatchsize, reporting=True)
-
+            l_all_zero = self.compute_loss_floris(x_out*0, wss.reshape(lengthRow, lengthColumn)[:,0].reshape(lengthRow,1), wds[:lengthColumn,0].reshape(lengthColumn,1), idx_batch, reporting=True)  
             indices = idx_batch.x_ptr.tolist()
             split = []
             for i in range(len(indices)-1):
@@ -603,7 +535,7 @@ class WPGNN(torch.nn.Module):
         with open('out.txt', 'w') as f:
             print('Results:', file=f)
 
-        loader = DataLoader(dataset_test, batch_size=1,follow_batch=['x','edge_attr'], shuffle=False)
+        loader = DataLoader(dataset, batch_size=1,follow_batch=['x','edge_attr'], shuffle=False)
         batch_iterator = iter(loader)
 
         diffs = []
@@ -611,21 +543,15 @@ class WPGNN(torch.nn.Module):
         energy_zero = []
         energy_pred = []
         energy_opti = []
-
-        diffopt, diffgnn, index = 0,0,0
-
         for i, batch in enumerate(batch_iterator):
-            #i_l = i%(lengthColumn*lengthRow)
-            #index = (i_l%lengthColumn)*lengthRow + int(i_l/lengthColumn) +int(i/(lengthColumn*lengthRow))*(lengthColumn*lengthRow)
-            #index = (i_l%lengthRow)*lengthColumn + int(i_l/lengthRow) +int(i/(lengthColumn*lengthRow))*(lengthColumn*lengthRow)
+            index = (i%lengthColumn)*lengthRow + int(i/lengthColumn)
 
             unnormed = utils.unnorm_coordinates(batch.x)
-            #unnormed = batch.x
             x = unnormed[:,0].detach().numpy().tolist()
             y = unnormed[:,1].detach().numpy().tolist()
 
-            wind_directions = wds_test[batch.y].detach().numpy().flatten().tolist()
-            wind_speeds = wss_test[batch.y].detach().numpy().flatten().tolist()
+            wind_directions = wds[batch.y].detach().numpy().flatten().tolist()
+            wind_speeds = wss[batch.y].detach().numpy().flatten().tolist()
 
             #self.eval()
             #x_out_s, edge_attr_out, u_out = self.forward(batch.x, batch.edge_index, batch.edge_attr, u[batch.y], batch)            
@@ -639,7 +565,6 @@ class WPGNN(torch.nn.Module):
             with open('out.txt', 'a') as f:
                 print('WPGNN prediction ', i, file=f)
                 print('yaws ', x_out[i].tolist(), file=f)
-                zw = l_all[0].flatten()
                 print('Total batch loss = {:.6f}'.format(l_all[0].flatten()[index]), file=f)
                 print('Turbine power loss = {:.6f}, '.format(l_all[1].flatten()[index]), file=f)
                 print('Yaw violation loss   = {:.6f}, '.format(l_all[2].flatten()[index]), file=f)
@@ -658,7 +583,7 @@ class WPGNN(torch.nn.Module):
                 print('', file=f)'''
 
 
-            l = self.compute_loss_floris(yaws, wss_test[batch.y], wds_test[batch.y], batch, 1, reporting=True)
+            l = self.compute_loss_floris(yaws, wss[batch.y], wds[batch.y], batch, reporting=True)
             with open('out.txt', 'a') as f:
                 print('Floris Opt, ', i, file=f)
                 print('yaws ', yaws.tolist(), file=f)
@@ -667,53 +592,20 @@ class WPGNN(torch.nn.Module):
                 print('Yaw violation loss   = {:.6f}, '.format(l[2].flatten()[0]), file=f)
                 print('', file=f)
 
-                print('ws',str(i), wss_test[i], file=f)
-                print('wd',str(i), wds_test[i], file=f)
+                print('ws',str(i), wss[i], file=f)
+                print('wd',str(i), wds[i], file=f)
 
             l1 = l[1].flatten()[0].detach().numpy()
             diffs.append((l2-l1)/l2 * (-100))
             energy_opti.append(-l1)
             energy_pred.append(-l2)
             energy_zero.append(-l3)
-            diffopt += (l3-l1)
-            diffgnn += (l3-l2)
-
-            index += 1
-
-        
-        diffs = np.array(diffs).reshape((test_column, test_row), order='C')
-        
-
-        
-        fig, ax = plt.subplots()
-        ax.imshow(diffs)
-
-        wsb = wss_test[torch.tensor(range(test_row))].detach().numpy().flatten().tolist()
-        wdb = wds_test[torch.tensor(range(test_column))*(test_row)].detach().numpy().flatten().tolist()
-        
-        wsb_string = []
-        for i in range(test_row):
-            wsb_string.append(str(round(wsb[i],1)))
-
-        wdb_string = []
-        for i in range(test_column):
-            wdb_string.append(str(round(wdb[i],1)))
-
-        ax.set_xticks(np.arange(test_row), labels=wsb_string)
-        ax.set_yticks(np.arange(test_column), labels=wdb_string)
-        # Loop over data dimensions and create text annotations.
-        for i in range(test_column):
-            for j in range(test_row):
-                text = ax.text(j, i, round(diffs[i,j],1),
-                            ha="center", va="center", color="w")
-        plt.show()
 
         
         # power for test set from FLORIS model (baseline and optimized)
         # FLORIS_baseline = (4483. + 2948. + 1771. + 923. + 364.)/5.
         # FLORIS_opt = (4662. + 3094. + 1882. + 1003. + 406.)/5.
         with open('out.txt', 'a') as f:
-            print( "wpgnn increase /possible increase", diffgnn/diffopt, file=f)
             for i,date in enumerate(dataset):
                 print(i, date.edge_index, file=f)
 
@@ -721,11 +613,12 @@ class WPGNN(torch.nn.Module):
         
         plt.rcParams.update({'font.size': 16})
         fig, ax = plt.subplots(1,2)
-        ax[0].plot(-np.array(lss), color='#{:0>3x}'.format(0), linestyle='-', linewidth=3, label='turbine {}'.format(i))
+        for i in range(int(len(dataset)/(wsBatchSize*wdBatchSize))):
+            ax[0].plot(-np.array(lss[i]), color='#{:0>3x}'.format(i*77), linestyle='-', linewidth=3, label='turbine {}'.format(i))
         ax[0].plot(-np.array(ltots), color='tab:red', linestyle='-', linewidth=3, label='total')
         #ax[0].legend()
 
-        ax[1].plot(-np.array(lss), color='#{:0>3x}'.format(0*77), linestyle='-', linewidth=3)
+        ax[1].plot(-np.array(lss[0]), color='#{:0>3x}'.format(0*77), linestyle='-', linewidth=3)
         #cm = plt.get_cmap('gist_rainbow')
         #for i in range(len(dataset)):
         #    ax[1].scatter(dataset[i].x[:,0].detach().numpy(), dataset[i].x[:,1].detach().numpy(), label='{}'.format(i), color=cm(1.*i/len(dataset)))
@@ -751,33 +644,6 @@ class WPGNN(torch.nn.Module):
 
 
 
-
-
-    def eveluate(self, loader, lengthRow, lengthColumn, layoutBatchsize, u, wss, wds):
-        for co, idx_batch in enumerate(loader):
-            #################################here is testing in evaluation mode######################################
-
-                        
-            ##################################here is testing in training mode######################################
-            with torch.no_grad():
-                x_out, edge_attr_out, u_out = self.forward(idx_batch.x, idx_batch.edge_index, idx_batch.edge_attr, u[idx_batch.y], idx_batch)
-                #x_out2, edge_attr_out2, u_out2 = self.forward(idx_batch.x, idx_batch.edge_index, idx_batch.edge_attr, u[idx_batch.y], idx_batch)
-                        
-                        
-                wsb = wss[torch.tensor(range(lengthRow))*lengthColumn]
-                wdb = wds[torch.tensor(range(lengthColumn))]
-
-                ##################################calculating the losses for evalutation and trainings mode######################################
-                l = self.compute_loss_floris(x_out, wsb, wdb, idx_batch, layoutBatchsize, reporting=True)
-                #l2 = self.compute_loss_floris(x_out2, wsb, wdb, idx_batch, layoutBatchsize, reporting=True)
-
-                print('yaws ', x_out.tolist())
-                print('Total batch loss = {:.6f}'.format(torch.sum(l[0])))
-                print('Turbine power loss = {:.6f}, '.format(torch.sum(l[1])))
-                print('Yaw violation loss   = {:.6f}, '.format(torch.sum(l[2])))
-                print('')
-
-        return l
 
 
 def test(x,y, wind_directions, wind_speeds):
@@ -861,7 +727,7 @@ def load_weights_h5(m, filename):
             for childModel in childMeta.children():
                 #childeModel is Edge/Node/Global-Model
                 for name, childLin in childModel.named_children():
-                    if (not isinstance(childLin, SumAggregation) and not isinstance(childLin, BatchNorm)):
+                    if not isinstance(childLin, SumAggregation):
                         if isinstance(childModel, mod.EdgeModel):
                             weight_name = 'wpgnn/edgeUpdate{0:02d}/'.format(index) + name + '/w:0'
                             bias_name = 'wpgnn/edgeUpdate{0:02d}/'.format(index) + name + '/b:0'
@@ -884,7 +750,7 @@ def save_weights_h5(m, filename):
             for childModel in childMeta.children():
                 #childeModel is Edge/Node/Global-Model
                 for name, childLin in childModel.named_children():
-                    if not isinstance(childLin, SumAggregation) and not isinstance(childLin, BatchNorm):
+                    if not isinstance(childLin, SumAggregation):
                         if isinstance(childModel, mod.EdgeModel):
                             weight_name = 'wpgnn/edgeUpdate{0:02d}/'.format(index) + name + '/w:0'
                             bias_name = 'wpgnn/edgeUpdate{0:02d}/'.format(index) + name + '/b:0'

@@ -1,6 +1,8 @@
 import torch
 from torch.nn import Sequential as Seq, Linear as Lin, ReLU, BatchNorm1d
-from torch_geometric.nn import SumAggregation
+from torch_geometric.nn import SumAggregation   
+from torch_geometric.nn.norm.graph_norm import GraphNorm
+from torch_geometric.nn.norm.batch_norm import BatchNorm
 
 
 class EdgeModel(torch.nn.Module):
@@ -20,7 +22,10 @@ class EdgeModel(torch.nn.Module):
         for i in range(self.n_layers):
             layer_input_size = self.input_size if i == 0 else layer_sizes[i-1]
             newLinLayer = Lin(layer_input_size, layer_sizes[i] ,bias=True)
-            newBatchNormLayer = BatchNorm1d(layer_sizes[i],track_running_stats=True)
+            
+            newBatchNormLayer = BatchNorm1d(layer_sizes[i],track_running_stats=False)
+            #newBatchNormLayer = GraphNorm(layer_sizes[i])
+
 
             #add Module to children list sucht that it will be recursivly found in self.apply (called in WPGNN.__init__)
             self.add_module(name='linear{0:03d}'.format(i), module=newLinLayer)
@@ -29,7 +34,8 @@ class EdgeModel(torch.nn.Module):
             self.norm_layers.append(newBatchNormLayer)
         layer_input_size = self.input_size if self.n_layers == 0 else layer_sizes[-1]
         newLinLayer = Lin(layer_input_size, output_size ,bias=True)
-        newBatchNormLayer = BatchNorm1d(output_size,track_running_stats=True)
+        newBatchNormLayer = BatchNorm1d(output_size,track_running_stats=False)
+        #newBatchNormLayer = GraphNorm(output_size)
 
         self.add_module(name='linear_out', module=newLinLayer)
         self.add_module(name='norm_out',module=newBatchNormLayer)
@@ -54,17 +60,18 @@ class EdgeModel(torch.nn.Module):
 
 
         for i in range(self.n_layers-1):
+            x_old = x
+
             x = self.layers[i](x)
-            x = self.norm_layers[i](x)
+            #x = self.norm_layers[i](x)
             x = torch.nn.functional.leaky_relu(x, negative_slope=0.2)
-            #if x.shape==x_a.shape:
-            #    x = x_a + x
-            #else:
-            #    x = x_a
-            #x = torch.sigmoid(x)
+
+            if x.shape==x_old.shape:
+                x = x_old + x
+            x = torch.sigmoid(x)
 
         x = self.layers[-1](x)
-        x = self.norm_layers[-1](x)
+        #x = self.norm_layers[-1](x)
         if self.output_activation == 'leaky_relu':
             x = torch.nn.functional.leaky_relu(x, negative_slope=0.2)
         elif self.output_activation == 'relu':
@@ -97,7 +104,8 @@ class NodeModel(torch.nn.Module):
         for i in range(self.n_layers):
             layer_input_size = self.input_size if i == 0 else layer_sizes[i-1]
             newLinLayer = Lin(layer_input_size, layer_sizes[i] ,bias=True)
-            newBatchNormLayer = BatchNorm1d(layer_sizes[i],track_running_stats=True)
+            newBatchNormLayer = BatchNorm1d(layer_sizes[i],track_running_stats=False)
+            #newBatchNormLayer = GraphNorm(layer_sizes[i])
 
             self.add_module(name='linear{0:03d}'.format(i), module=newLinLayer)
             self.add_module(name='norm{0:03d}'.format(i), module=newBatchNormLayer)
@@ -107,7 +115,11 @@ class NodeModel(torch.nn.Module):
 
         layer_input_size = self.input_size if self.n_layers == 0 else layer_sizes[-1]
         newLinLayer = Lin(layer_input_size, output_size ,bias=True)
-        newBatchNormLayer = BatchNorm1d(output_size,track_running_stats=True)
+        #newBatchNormLayer = BatchNorm1d(output_size,track_running_stats=True)
+        #newBatchNormLayer = GraphNorm(output_size)
+        newBatchNormLayer = BatchNorm1d(output_size,track_running_stats=False)
+
+
 
         self.add_module(name='linear_out', module=newLinLayer)
         self.add_module(name='norm_out', module=newBatchNormLayer)
@@ -149,17 +161,17 @@ class NodeModel(torch.nn.Module):
         #src_to_target_aggregated = 0*src_to_target_aggregated
         tmp = torch.cat([target_to_src_aggregated, src_to_target_aggregated, x, u], dim=1)
 
+
         for i in range(self.n_layers-1):
+            tmp_old = tmp
+
             tmp = self.layers[i](tmp)
             tmp = self.norm_layers[i](tmp)
             tmp = torch.nn.functional.leaky_relu(tmp, negative_slope=0.02)
 
             #CHANGED
-            #if tmp.shape==tmp_a.shape:
-            #    tmp = tmp_a + tmp
-            #else:
-            #    tmp = tmp_a
-            #tmp = torch.sigmoid(tmp)
+            if tmp.shape==tmp_old.shape:
+                tmp = tmp_old + tmp
 
         tmp = self.layers[-1](tmp)
         tmp = self.norm_layers[-1](tmp)
@@ -196,7 +208,9 @@ class GlobalModel(torch.nn.Module):
         for i in range(self.n_layers):
             layer_input_size = self.input_size if i == 0 else layer_sizes[i-1]
             newLinLayer = Lin(layer_input_size, layer_sizes[i] ,bias=True)
-            newBatchNormLayer = BatchNorm1d(layer_sizes[i])
+            
+            newBatchNormLayer = BatchNorm(layer_sizes[i],track_running_stats=False)
+            #newBatchNormLayer = BatchNorm1d(layer_sizes[i])
 
             self.add_module(name='linear{0:03d}'.format(i), module=newLinLayer)
             self.add_module(name='norm{0:03d}'.format(i), module=newBatchNormLayer)
@@ -206,7 +220,9 @@ class GlobalModel(torch.nn.Module):
 
         layer_input_size = self.input_size if self.n_layers == 0 else layer_sizes[-1]
         newLinLayer = Lin(layer_input_size, output_size ,bias=True)
-        newBatchNormLayer = BatchNorm1d(output_size)
+        
+        newBatchNormLayer = BatchNorm(output_size,track_running_stats=False)
+        #newBatchNormLayer = BatchNorm1d(output_size)
         
         self.add_module(name='linear_out', module=newLinLayer)
         self.add_module(name='norm_out', module=newBatchNormLayer)
