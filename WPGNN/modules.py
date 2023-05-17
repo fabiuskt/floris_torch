@@ -23,7 +23,7 @@ class EdgeModel(torch.nn.Module):
             layer_input_size = self.input_size if i == 0 else layer_sizes[i-1]
             newLinLayer = Lin(layer_input_size, layer_sizes[i] ,bias=True)
             
-            newBatchNormLayer = BatchNorm1d(layer_sizes[i],track_running_stats=False)
+            newBatchNormLayer = BatchNorm1d(layer_sizes[i],track_running_stats=True)
             #newBatchNormLayer = GraphNorm(layer_sizes[i])
 
 
@@ -34,7 +34,7 @@ class EdgeModel(torch.nn.Module):
             self.norm_layers.append(newBatchNormLayer)
         layer_input_size = self.input_size if self.n_layers == 0 else layer_sizes[-1]
         newLinLayer = Lin(layer_input_size, output_size ,bias=True)
-        newBatchNormLayer = BatchNorm1d(output_size,track_running_stats=False)
+        newBatchNormLayer = BatchNorm1d(output_size,track_running_stats=True)
         #newBatchNormLayer = GraphNorm(output_size)
 
         self.add_module(name='linear_out', module=newLinLayer)
@@ -104,7 +104,7 @@ class NodeModel(torch.nn.Module):
         for i in range(self.n_layers):
             layer_input_size = self.input_size if i == 0 else layer_sizes[i-1]
             newLinLayer = Lin(layer_input_size, layer_sizes[i] ,bias=True)
-            newBatchNormLayer = BatchNorm1d(layer_sizes[i],track_running_stats=False)
+            newBatchNormLayer = BatchNorm1d(layer_sizes[i],track_running_stats=True)
             #newBatchNormLayer = GraphNorm(layer_sizes[i])
 
             self.add_module(name='linear{0:03d}'.format(i), module=newLinLayer)
@@ -117,7 +117,7 @@ class NodeModel(torch.nn.Module):
         newLinLayer = Lin(layer_input_size, output_size ,bias=True)
         #newBatchNormLayer = BatchNorm1d(output_size,track_running_stats=True)
         #newBatchNormLayer = GraphNorm(output_size)
-        newBatchNormLayer = BatchNorm1d(output_size,track_running_stats=False)
+        newBatchNormLayer = BatchNorm1d(output_size,track_running_stats=True)
 
 
 
@@ -209,7 +209,7 @@ class GlobalModel(torch.nn.Module):
             layer_input_size = self.input_size if i == 0 else layer_sizes[i-1]
             newLinLayer = Lin(layer_input_size, layer_sizes[i] ,bias=True)
             
-            newBatchNormLayer = BatchNorm(layer_sizes[i],track_running_stats=False)
+            newBatchNormLayer = BatchNorm1d(layer_sizes[i],track_running_stats=True)
             #newBatchNormLayer = BatchNorm1d(layer_sizes[i])
 
             self.add_module(name='linear{0:03d}'.format(i), module=newLinLayer)
@@ -221,7 +221,7 @@ class GlobalModel(torch.nn.Module):
         layer_input_size = self.input_size if self.n_layers == 0 else layer_sizes[-1]
         newLinLayer = Lin(layer_input_size, output_size ,bias=True)
         
-        newBatchNormLayer = BatchNorm(output_size,track_running_stats=False)
+        newBatchNormLayer = BatchNorm1d(output_size,track_running_stats=True)
         #newBatchNormLayer = BatchNorm1d(output_size)
         
         self.add_module(name='linear_out', module=newLinLayer)

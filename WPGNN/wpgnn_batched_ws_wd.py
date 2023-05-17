@@ -13,6 +13,7 @@ import os
 import floris_torch_batched
 import matplotlib.pyplot as plt
 import random
+from torch.nn import BatchNorm1d
 from utils import *
 
 import floris
@@ -413,6 +414,9 @@ class WPGNN(torch.nn.Module):
             wsb = wss[torch.tensor(rws)]
             wdb = wds[torch.tensor(rwd)*lengthRow]
 
+            #wsb += torch.normal(0., 0.5, wsb.detach().numpy().shape)
+            #wdb += torch.normal(0., 10.0, wdb.detach().numpy().shape)
+
             #wsb = torch.tensor(np.random.uniform(8,10,wsBatchSize).reshape((wsBatchSize,1)))
             #wdb = torch.tensor(np.random.uniform(181,359,wdBatchSize).reshape((wdBatchSize,1)))
 
@@ -518,9 +522,9 @@ class WPGNN(torch.nn.Module):
 
                 #t2 = torch.sum(torch.sum(l2[0])).detach().item()
 
-                ltots.append(t)
+                ltots.append(t_test)
                 #lss.append(loss.detach().numpy())
-                lss.append(t_test)
+                lss.append(t)
 
             else:
                 ltots.append(ltots[-1])
@@ -570,9 +574,9 @@ class WPGNN(torch.nn.Module):
 
 
         for co, idx_batch in enumerate(loader):
-            #self.eval()
+            self.eval()
             x_out, edge_attr_out, u_out = self.forward(idx_batch.x, idx_batch.edge_index, idx_batch.edge_attr, u_test[idx_batch.y], idx_batch)
-            #self.train()
+            self.train()
 
             wsb = wss_test[torch.tensor(range(test_row))]
             wdb = wds_test[torch.tensor(range(test_column))*(test_row)]
@@ -760,12 +764,14 @@ class WPGNN(torch.nn.Module):
                         
             ##################################here is testing in training mode######################################
             with torch.no_grad():
+                self.eval()
                 x_out, edge_attr_out, u_out = self.forward(idx_batch.x, idx_batch.edge_index, idx_batch.edge_attr, u[idx_batch.y], idx_batch)
+                self.train()
                 #x_out2, edge_attr_out2, u_out2 = self.forward(idx_batch.x, idx_batch.edge_index, idx_batch.edge_attr, u[idx_batch.y], idx_batch)
                         
                         
-                wsb = wss[torch.tensor(range(lengthRow))*lengthColumn]
-                wdb = wds[torch.tensor(range(lengthColumn))]
+                wsb = wss[torch.tensor(range(lengthRow))]
+                wdb = wds[torch.tensor(range(lengthColumn))*lengthRow]
 
                 ##################################calculating the losses for evalutation and trainings mode######################################
                 l = self.compute_loss_floris(x_out, wsb, wdb, idx_batch, layoutBatchsize, reporting=True)
@@ -855,7 +861,7 @@ def init_weights(m):
 
 def load_weights_h5(m, filename):
     with h5py.File(filename, 'r') as f:
-        #m is wpgnn
+        #m is 
         for index, childMeta in enumerate(m.children()):
             #childMeta is a MetaLayer
             for childModel in childMeta.children():
@@ -865,15 +871,33 @@ def load_weights_h5(m, filename):
                         if isinstance(childModel, mod.EdgeModel):
                             weight_name = 'wpgnn/edgeUpdate{0:02d}/'.format(index) + name + '/w:0'
                             bias_name = 'wpgnn/edgeUpdate{0:02d}/'.format(index) + name + '/b:0'
+                            if isinstance(childLin, BatchNorm1d):
+                                mean_name = 'wpgnn/edgeUpdate{0:02d}/'.format(index) + name + '/m:0'
+                                variance_name = 'wpgnn/edgeUpdate{0:02d}/'.format(index) + name + '/v:0'        
                         if isinstance(childModel, mod.NodeModel):
                             weight_name = 'wpgnn/nodeUpdate{0:02d}/'.format(index) + name + '/w:0'
                             bias_name = 'wpgnn/nodeUpdate{0:02d}/'.format(index) + name + '/b:0'
+                            if isinstance(childLin, BatchNorm1d):
+                                mean_name = 'wpgnn/nodeUpdate{0:02d}/'.format(index) + name + '/m:0'
+                                variance_name = 'wpgnn/nodeUpdate{0:02d}/'.format(index) + name + '/v:0'
                         if isinstance(childModel, mod.GlobalModel):
                             weight_name = 'wpgnn/globalUpdate{0:02d}/'.format(index) + name + '/w:0'
                             bias_name = 'wpgnn/globalUpdate{0:02d}/'.format(index) + name + '/b:0'
-
+                            if isinstance(childLin, BatchNorm1d):
+                                mean_name = 'wpgnn/globalUpdate{0:02d}/'.format(index) + name + '/m:0'
+                                variance_name = 'wpgnn/globalUpdate{0:02d}/'.format(index) + name + '/v:0'
+  
                         childLin.weight= torch.nn.Parameter(torch.tensor(f[weight_name].get(weight_name), dtype=torch.float32))
                         childLin.bias= torch.nn.Parameter(torch.tensor(f[bias_name].get(bias_name), dtype=torch.float32))
+                        if isinstance(childLin, BatchNorm1d):
+                            a = torch.tensor(f[variance_name].get(variance_name))
+                            b = torch.tensor(f[mean_name].get(mean_name))
+                            test  = childLin.get_buffer('running_mean')
+                            childLin.register_buffer('running_var', torch.tensor(f[variance_name].get(variance_name), dtype=torch.float32))
+                            childLin.register_buffer('running_mean', torch.tensor(f[mean_name].get(mean_name), dtype=torch.float32))
+
+
+
 
 
 def save_weights_h5(m, filename):
@@ -884,23 +908,47 @@ def save_weights_h5(m, filename):
             for childModel in childMeta.children():
                 #childeModel is Edge/Node/Global-Model
                 for name, childLin in childModel.named_children():
-                    if not isinstance(childLin, SumAggregation) and not isinstance(childLin, BatchNorm):
+                    if not isinstance(childLin, SumAggregation):# and not isinstance(childLin, BatchNorm):
                         if isinstance(childModel, mod.EdgeModel):
                             weight_name = 'wpgnn/edgeUpdate{0:02d}/'.format(index) + name + '/w:0'
                             bias_name = 'wpgnn/edgeUpdate{0:02d}/'.format(index) + name + '/b:0'
+                            if isinstance(childLin, BatchNorm1d):
+                                mean_name = 'wpgnn/edgeUpdate{0:02d}/'.format(index) + name + '/m:0'
+                                variance_name = 'wpgnn/edgeUpdate{0:02d}/'.format(index) + name + '/v:0'
                         if isinstance(childModel, mod.NodeModel):
                             weight_name = 'wpgnn/nodeUpdate{0:02d}/'.format(index) + name + '/w:0'
                             bias_name = 'wpgnn/nodeUpdate{0:02d}/'.format(index) + name + '/b:0'
+                            if isinstance(childLin, BatchNorm1d):
+                                mean_name = 'wpgnn/nodeUpdate{0:02d}/'.format(index) + name + '/m:0'
+                                variance_name = 'wpgnn/nodeUpdate{0:02d}/'.format(index) + name + '/v:0'
+ 
                         if isinstance(childModel, mod.GlobalModel):
                             weight_name = 'wpgnn/globalUpdate{0:02d}/'.format(index) + name + '/w:0'
                             bias_name = 'wpgnn/globalUpdate{0:02d}/'.format(index) + name + '/b:0'
+                            if isinstance(childLin, BatchNorm1d):
+                                mean_name = 'wpgnn/globalUpdate{0:02d}/'.format(index) + name + '/m:0'
+                                variance_name = 'wpgnn/globalUpdate{0:02d}/'.format(index) + name + '/v:0'
+ 
                         try:
-                            f.create_group(weight_name)
-                            f.create_group(bias_name)
+                            f.require_group(weight_name)
+                            f.require_group(bias_name)
+                            if isinstance(childLin, BatchNorm1d):
+                                f.require_group(mean_name)
+                                f.require_group(variance_name)
+                                print("done")
                         except:
                             pass
                         f[weight_name].create_dataset(weight_name, data=childLin.weight.detach().numpy())
                         f[bias_name].create_dataset(bias_name, data=childLin.bias.detach().numpy())
+                        if isinstance(childLin, BatchNorm1d):
+                            f[variance_name].create_dataset(variance_name, data=childLin.running_var.detach().numpy())
+                            f[mean_name].create_dataset(mean_name, data=childLin.running_mean.detach().numpy())
+                            a = childLin.weight
+                            b = childLin.bias
+                            c = childLin.running_mean
+                            d = childLin.running_var
+
+
 
 
 class ReLU_custom(torch.autograd.Function):

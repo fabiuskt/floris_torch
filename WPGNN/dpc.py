@@ -30,11 +30,11 @@ scale_factors = {'x_globals': torch.as_tensor([[0., 25.], [0., 25.], [0.09, 0.03
 
 
 save_model_path = 'FlorisDPC/floris_torch/example_training_batch_norm'
-load_path = save_model_path+'/{0:05d}'.format(1000)+'/wpgnn.h5'
+load_path = save_model_path+'/{0:05d}'.format(100)+'/wpgnn.h5'
 model = WPGNN(eN=eN, nN=nN, gN=gN,graph_size=graph_size, model_path=load_path)
 
-numWs, numWd, numLayout = 4,4,1
-wsBatchSize, wdBatchSize, layoutBatchSize = 4, 4, 1
+numWs, numWd, numLayout = 2,20,1
+wsBatchSize, wdBatchSize, layoutBatchSize = 2, 20, 1
 
 [[dataset_train, u_train, wss_train, wds_train],[dataset_test, u_test, wss_test, wds_test]] = utils.create_PyG_dataset(numLayout, numWs, numWd)
 normed_data_train, normed_u_train = utils.norm_data_pyg(xx=dataset_train, uu=u_train, scale_factors=scale_factors)
@@ -45,5 +45,5 @@ dataset_train = [normed_data_train, u_train, wss_train, wds_train]
 dataset_test = [normed_data_test, u_test, wss_test, wds_test]
 model.fitDPC(dataset_train, numWs, numWd, numLayout, 
           wsBatchSize, wdBatchSize, layoutBatchSize, test_data=dataset_test, learning_rate=0.001,
-          epochs=1000, decay_rate=1.0,print_every=10, save_every=100,
+          epochs=300, decay_rate=1.0,print_every=10, save_every=100,
           save_model_path=save_model_path)
