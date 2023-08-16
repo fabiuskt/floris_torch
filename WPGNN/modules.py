@@ -63,12 +63,12 @@ class EdgeModel(torch.nn.Module):
             x_old = x
 
             x = self.layers[i](x)
-            #x = self.norm_layers[i](x)
+            x = self.norm_layers[i](x)
             x = torch.nn.functional.leaky_relu(x, negative_slope=0.2)
 
-            if x.shape==x_old.shape:
-                x = x_old + x
-            x = torch.sigmoid(x)
+            #if x.shape==x_old.shape:
+            #    x = x_old + x
+            #x = torch.sigmoid(x)
 
         x = self.layers[-1](x)
         #x = self.norm_layers[-1](x)
@@ -170,8 +170,8 @@ class NodeModel(torch.nn.Module):
             tmp = torch.nn.functional.leaky_relu(tmp, negative_slope=0.02)
 
             #CHANGED
-            if tmp.shape==tmp_old.shape:
-                tmp = tmp_old + tmp
+            #if tmp.shape==tmp_old.shape:
+            #    tmp = tmp_old + tmp
 
         tmp = self.layers[-1](tmp)
         tmp = self.norm_layers[-1](tmp)

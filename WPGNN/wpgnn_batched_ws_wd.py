@@ -23,7 +23,7 @@ from floris.tools.optimization.yaw_optimization.yaw_optimizer_sr import YawOptim
 
 umin = torch.tensor([-25.]) # min allowed yaw angle (degrees)
 umax = torch.tensor([25.]) # max allowed yaw angle (degrees)
-u_penalty = 0.1
+u_penalty = 100.
 #u_penalty = 0.001
 
 
@@ -61,7 +61,7 @@ class WPGNN(torch.nn.Module):
             dim_in = [self.eN_in, self.nN_in, self.gN_in] if i == 0 else graph_size[i-1]
             newMetaLayer = self.graph_layer(dim_in, graph_size[i],
                                                       n_layers=10,
-                                                      hidden_dim=10,
+                                                      hidden_dim=360,
                                                       output_activation='leaky_relu',
                                                       layer_index=i)
             #add Module to children list such that it will be recursivly found in self.apply
@@ -71,7 +71,7 @@ class WPGNN(torch.nn.Module):
         dim_in = [self.eN_in, self.nN_in, self.gN_in] if self.n_layers == 1 else graph_size[-2]
         newMetaLayer = self.graph_layer(dim_in, graph_size[-1],
                                                   n_layers=10,
-                                                  hidden_dim=10,
+                                                  hidden_dim=360,
                                                   output_activation='none',
                                                   layer_index=self.n_layers-1)
         self.add_module(name='meta{0:03d}'.format(self.n_layers - 1), module=newMetaLayer)
@@ -244,16 +244,23 @@ class WPGNN(torch.nn.Module):
             return loss
 
 
-    def compute_loss_floris(self, yaws, wss, wds, batch, layoutBatchsize, reporting=False, rand=False):
+    def compute_loss_floris(self, yaws, wss, wds, batch, layoutBatchsize, reporting=False, rand=False, epoch=0):
         if(rand):
             s = yaws.detach().numpy().shape
-            #yaws += torch.normal(0.,0.1, s)
+            if(epoch!=0):
+                yaws += torch.normal(0.,1.0*np.exp(-epoch*0.01), s)
+                print(1.0*np.exp(-epoch*0.01))
         relu = ReLU_custom.apply
         clipped_yaws = relu(yaws*umax-umin) + umin
         #clipped_yaws = yaws*umax-umin 
 
         relu2 = ReLU_custom.apply
         clipped_yaws = -relu2(-clipped_yaws + umax) + umax
+
+        '''clipped_yaws = ((yaws+1) % 2) - 1
+        clipped_yaws[yaws==1] = 1.
+        clipped_yaws[yaws==-1] = -1.
+        clipped_yaws*= umax'''
         
         indices = batch.x_ptr.tolist()
         split = []
@@ -325,14 +332,16 @@ class WPGNN(torch.nn.Module):
             u_viol_cost_z = u_penalty * torch.sum(torch.sqrt(u_viol_lower.pow(2) + u_viol_upper.pow(2) +1e-16),2)
 
             # total cost
-            total_cost_z = u_viol_cost_z + power_cost_z
+            total_cost_z = power_cost_z + u_viol_cost_z
 
 
             total_cost[i_layout,:,:] = total_cost_z
             u_viol_cost[i_layout,:,:] = u_viol_cost_z            
             power_cost[i_layout,:,:] = power_cost_z         
 
-            opt_loss += torch.sum(torch.sum(total_cost_z))/(yaws.shape[0]*yaws.shape[1])
+
+            #changed to divide also by the number of tubines in a data point
+            opt_loss += torch.sum(torch.sum(total_cost_z))/(yaws.shape[0]*yaws.shape[1]*yaws.shape[2])
 
 
         if reporting:
@@ -342,11 +351,11 @@ class WPGNN(torch.nn.Module):
 
 
 
-    def train_step_DPC(self, batch, u, wss, wds, layoutBatchSize):
+    def train_step_DPC(self, batch, u, wss, wds, layoutBatchSize, epoch):
         self.optimizer.zero_grad()
         x_out, edge_attr_out, u_out  = self.forward(batch.x, batch.edge_index, batch.edge_attr, u, batch)
         #x_out = torch.tensor([[0.1],[0.2],[0.3],[0.4],[0.9],[ 1.0],[-0.1],[-0.2], [1.188],[-1.583],[0.1844],[0.2107],[0.1850],[0.2104],[1.18],[-1.5]])
-        loss = self.compute_loss_floris(x_out, wss, wds, batch, layoutBatchSize,rand=True)
+        loss = self.compute_loss_floris(x_out, wss, wds, batch, layoutBatchSize,rand=True,epoch=epoch)
         loss.backward()
         self.optimizer.step()
         #print_weights(self)
@@ -376,8 +385,10 @@ class WPGNN(torch.nn.Module):
         dataset, u, wss, wds = train_data
         dataset_test, u_test, wss_test, wds_test = test_data
 
-        lss = []
-        ltots = []
+        ls_train = []
+        ls_test = []
+        ls_train_eval = []
+        ls_test_eval = []
 
         # Start training process
         iters = 0
@@ -385,10 +396,16 @@ class WPGNN(torch.nn.Module):
         previous_loss = torch.inf
 
         
-        test_row = 2*lengthRow-1
-        test_column = 2*lengthColumn-1        
+        #test_row = 2*lengthRow-1
+        #test_column = 2*lengthColumn-1        
+        test_row = 1
+        test_column = 719       
         #test_row = lengthRow
         #test_column = lengthColumn
+
+
+
+
 
 
         for epoch in range(1, epochs+1):
@@ -400,51 +417,51 @@ class WPGNN(torch.nn.Module):
             #        factor = pow(0.1, (10-epoch)/2)
             #        g['lr'] = learning_rate * factor
 
-            #rws = random.sample(range(lengthRow),wsBatchSize)
-            #rwd = random.sample(range(lengthColumn),wdBatchSize)
-            #rly = random.sample(range(lengthLayout),layoutBatchsize)
+            rws = random.sample(range(lengthRow),wsBatchSize)
+            rwd = random.sample(range(lengthColumn),wdBatchSize)
+            rly = random.sample(range(lengthLayout),layoutBatchsize)
 
-
-
-
-            rws = range(lengthRow)
-            rwd = range(lengthColumn)
-            rly = range(lengthLayout)
-
-            wsb = wss[torch.tensor(rws)]
-            wdb = wds[torch.tensor(rwd)*lengthRow]
-
-            #wsb += torch.normal(0., 0.5, wsb.detach().numpy().shape)
-            #wdb += torch.normal(0., 10.0, wdb.detach().numpy().shape)
-
-            #wsb = torch.tensor(np.random.uniform(8,10,wsBatchSize).reshape((wsBatchSize,1)))
-            #wdb = torch.tensor(np.random.uniform(181,359,wdBatchSize).reshape((wdBatchSize,1)))
+            '''rws = range(wsBatchSize)
+            rwd = range(wdBatchSize)
+            rly = range(layoutBatchsize)'''
 
 
             batchList = []# *(lengthColumn*lengthRow)
             uList = [] #*(lengthColumn*lengthRow)
 
-            #batchList =[]
-            #uList = []
-            turb_intensity = 0.08
-            countup = 0
-            for j, wd in enumerate(wdb.flatten()):
-                for i, ws in enumerate(wsb.flatten()):
-                    uv = speed_to_velocity([ws, wd])
-                    x = unnorm_coordinates(dataset[0].x)
-                    edge_attr, edge_index = identify_edges_pyg(x.detach().numpy(), wd)
-                    #u_train.append([ws,wd,turb_intensity])
+            for layout in rly:
+                wsb = wss[torch.tensor(rws)]
+                wdb = wds[torch.tensor(rwd)*lengthRow]
 
-                    #i_l = countup%(lengthColumn*lengthRow)
-                    index = i + j* lengthColumn
-            
+                #wsb += torch.normal(0., 0.5, wsb.detach().numpy().shape)
+                wdb += torch.rand(wdb.detach().numpy().shape)
 
-                    #batchList[index] = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=countup)
-                    batchList.append(Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=countup))
+                #wsb = torch.tensor(np.random.uniform(8,10,wsBatchSize).reshape((wsBatchSize,1)))
+                #wdb = torch.tensor(np.random.uniform(0,359,wdBatchSize).reshape((wdBatchSize,1)))
 
-                    #uList[index] = [uv[0],uv[1],turb_intensity]
-                    uList.append([uv[0],uv[1],turb_intensity])
-                    countup+=1
+                #batchList =[]
+                #uList = []
+                turb_intensity = 0.08
+                countup = 0
+                for j, wd in enumerate(wdb.flatten()):
+                    for i, ws in enumerate(wsb.flatten()):
+                        uv = speed_to_velocity([ws, wd])
+                        x = unnorm_coordinates(dataset[lengthColumn*lengthRow*layout].x)
+                        edge_attr, edge_index = identify_edges_pyg(x.detach().numpy(), wd)
+                        #u_train.append([ws,wd,turb_intensity])
+
+                        #i_l = countup%(lengthColumn*lengthRow)
+                        index = i + j* lengthColumn
+                
+
+                        #batchList[index] = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=countup)
+                        batchList.append(Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=countup))
+
+                        #uList[index] = [uv[0],uv[1],turb_intensity]
+                        uList.append([uv[0],uv[1],turb_intensity])
+                        #u_test.append([(ws-8.0)/(10.0-8.0),torch.sin(torch.tensor(wd)),torch.cos(torch.tensor(wd))])
+
+                        countup+=1
 
 
             batchList = norm_data_pyg(batchList)[0]
@@ -462,12 +479,12 @@ class WPGNN(torch.nn.Module):
 
             #uList = uList2
             #batchList = batchList2
-            uList = torch.as_tensor(uList, dtype=torch.float32)
+            #uList = torch.as_tensor(uList, dtype=torch.float32)
 
             loader = DataLoader(batchList, batch_size=wdBatchSize*wsBatchSize*layoutBatchsize,follow_batch=['x','edge_attr'], shuffle=False) 
 
             for co, idx_batch in enumerate(loader):
-                loss = self.train_step_DPC(idx_batch, uList, wsb, wdb, layoutBatchsize)
+                loss = self.train_step_DPC(idx_batch, uList, wsb, wdb, layoutBatchsize, epoch)
                 #t = loss.detach().item()
                 #lss[co].append(t)
 
@@ -513,22 +530,34 @@ class WPGNN(torch.nn.Module):
                 loader = DataLoader(dataset, batch_size=wss.size()[0]*wds.size()[0],follow_batch=['x','edge_attr'], shuffle=False)
                 loader_test = DataLoader(dataset_test, batch_size=wss_test.size()[0]*wds_test.size()[0],follow_batch=['x','edge_attr'], shuffle=False)
 
-                l = self.eveluate(loader, lengthRow, lengthColumn, layoutBatchsize, u, wss, wds)      
-                l_test = self.eveluate(loader_test, test_row, test_column, layoutBatchsize, u_test, wss_test, wds_test)                
+                l = self.eveluate(loader, lengthRow, lengthColumn, layoutBatchsize, u, wss, wds, ev=False)      
+                l_test = self.eveluate(loader_test, test_row, test_column, layoutBatchsize, u_test, wss_test, wds_test, ev=False)                
+
+                loader_eval = DataLoader(dataset, batch_size=wss.size()[0]*wds.size()[0],follow_batch=['x','edge_attr'], shuffle=False)
+                loader_test_eval = DataLoader(dataset_test, batch_size=wss_test.size()[0]*wds_test.size()[0],follow_batch=['x','edge_attr'], shuffle=False)
+
+                l_eval = self.eveluate(loader, lengthRow, lengthColumn, layoutBatchsize, u, wss, wds, ev=True)      
+                l_test_eval = self.eveluate(loader_test, test_row, test_column, layoutBatchsize, u_test, wss_test, wds_test, ev=True)                
           
                 
-                t = torch.sum(torch.sum(l[0])).detach().item() / (lengthColumn*lengthRow)
-                t_test = torch.sum(torch.sum(l_test[0])).detach().item() / ((test_row)*(test_column))
+                t = torch.sum(torch.sum(l[0])).detach().item() / (lengthColumn*lengthRow*lengthLayout)
+                t_test = torch.sum(torch.sum(l_test[0])).detach().item() / ((test_row)*(test_column)*lengthLayout)
+
+                t_eval = torch.sum(torch.sum(l_eval[0])).detach().item() / (lengthColumn*lengthRow*lengthLayout)
+                t_test_eval = torch.sum(torch.sum(l_test_eval[0])).detach().item() / ((test_row)*(test_column)*lengthLayout)
 
                 #t2 = torch.sum(torch.sum(l2[0])).detach().item()
 
-                ltots.append(t_test)
-                #lss.append(loss.detach().numpy())
-                lss.append(t)
+                ls_test.append(t_test)
+                ls_train.append(t)                
+                ls_test_eval.append(t_test_eval)
+                ls_train_eval.append(t_eval)
 
             else:
-                ltots.append(ltots[-1])
-                lss.append(lss[-1])
+                ls_test.append(ls_test[-1])
+                ls_train.append(ls_train[-1])                
+                ls_test_eval.append(ls_test_eval[-1])
+                ls_train_eval.append(ls_train_eval[-1])
 
             
             #if test_data is not None:
@@ -537,10 +566,14 @@ class WPGNN(torch.nn.Module):
             #    print('Turbine power loss = {:.6f}, '.format(l[1]))
             #    print('Yaw violation loss   = {:.6f}, '.format(l[2]))
             #    print('')
-
-            if epoch%1==0:
+            global u_penalty
+            if (epoch+1)%301==0:
+                self.optimizer = torch.optim.Adam(self.parameters())
                 for g in self.optimizer.param_groups:
-                    g['lr'] *= decay_rate
+                    g['lr'] = learning_rate
+                #u_penalty*=1
+                #for g in self.optimizer.param_groups:
+                #    g['lr'] *= decay_rate
             
             #previous_loss = loss
 
@@ -618,6 +651,8 @@ class WPGNN(torch.nn.Module):
 
         diffopt, diffgnn, index = 0,0,0
 
+        opt_yaws = list()
+
         for i, batch in enumerate(batch_iterator):
             #i_l = i%(lengthColumn*lengthRow)
             #index = (i_l%lengthColumn)*lengthRow + int(i_l/lengthColumn) +int(i/(lengthColumn*lengthRow))*(lengthColumn*lengthRow)
@@ -637,6 +672,7 @@ class WPGNN(torch.nn.Module):
             #x_safe = x_out[index]
             #x_out_s = x_out_s.reshape(len(x),1)
             yaws = torch.as_tensor(test(x,y, wind_directions, wind_speeds),dtype=torch.float32).reshape(len(x),1)
+            opt_yaws.append(yaws.detach().numpy())
             yaws /= 25.0
             #l2 = self.compute_loss_floris(x_out_s, wss[batch.y], wds[batch.y], batch, reporting=True)
             
@@ -685,7 +721,7 @@ class WPGNN(torch.nn.Module):
             index += 1
 
         
-        diffs = np.array(diffs).reshape((test_column, test_row), order='C')
+        diffs = np.array(diffs).reshape((test_column*lengthLayout, test_row), order='C')
         
 
         
@@ -693,7 +729,7 @@ class WPGNN(torch.nn.Module):
         ax.imshow(diffs)
 
         wsb = wss_test[torch.tensor(range(test_row))].detach().numpy().flatten().tolist()
-        wdb = wds_test[torch.tensor(range(test_column))*(test_row)].detach().numpy().flatten().tolist()
+        wdb = lengthLayout * wds_test[torch.tensor(range(test_column))*(test_row)].detach().numpy().flatten().tolist()
         
         wsb_string = []
         for i in range(test_row):
@@ -704,9 +740,9 @@ class WPGNN(torch.nn.Module):
             wdb_string.append(str(round(wdb[i],1)))
 
         ax.set_xticks(np.arange(test_row), labels=wsb_string)
-        ax.set_yticks(np.arange(test_column), labels=wdb_string)
+        ax.set_yticks(np.arange(test_column*lengthLayout), labels=lengthLayout*wdb_string)
         # Loop over data dimensions and create text annotations.
-        for i in range(test_column):
+        for i in range(lengthLayout*test_column):
             for j in range(test_row):
                 text = ax.text(j, i, round(diffs[i,j],1),
                             ha="center", va="center", color="w")
@@ -725,11 +761,13 @@ class WPGNN(torch.nn.Module):
         
         plt.rcParams.update({'font.size': 16})
         fig, ax = plt.subplots(1,2)
-        ax[0].plot(-np.array(lss), color='#{:0>3x}'.format(0), linestyle='-', linewidth=3, label='turbine {}'.format(i))
-        ax[0].plot(-np.array(ltots), color='tab:red', linestyle='-', linewidth=3, label='total')
-        #ax[0].legend()
+        ax[0].plot(-np.array(ls_test), color='tab:green', linestyle='-', linewidth=3, label='test')
+        ax[0].plot(-np.array(ls_test_eval), color='tab:red', linestyle='-', linewidth=3, label='test_eval')
+        ax[0].plot(-np.array(ls_train), color='tab:blue', linestyle='-', linewidth=3, label='train')
+        ax[0].plot(-np.array(ls_train_eval), color='tab:grey', linestyle='-', linewidth=3, label='train_eval')
+        ax[0].legend()
 
-        ax[1].plot(-np.array(lss), color='#{:0>3x}'.format(0*77), linestyle='-', linewidth=3)
+        ax[1].plot(-np.array(ls_train), color='#{:0>3x}'.format(0*77), linestyle='-', linewidth=3)
         #cm = plt.get_cmap('gist_rainbow')
         #for i in range(len(dataset)):
         #    ax[1].scatter(dataset[i].x[:,0].detach().numpy(), dataset[i].x[:,1].detach().numpy(), label='{}'.format(i), color=cm(1.*i/len(dataset)))
@@ -740,6 +778,12 @@ class WPGNN(torch.nn.Module):
         #ax[1].legend()
         fig.set_size_inches(12,6)
         plt.show()
+
+        #opt_yaws = np.array(opt_yaws)
+        #opt_yaws = opt_yaws[:,:,0]
+        #plt.plot(opt_yaws)
+        #plt.title("Optimal yaws over wind directions and wind speed")
+        #plt.show()
 
         angles = np.linspace(0,360,25)
         plt.plot(diffs)
@@ -757,16 +801,18 @@ class WPGNN(torch.nn.Module):
 
 
 
-    def eveluate(self, loader, lengthRow, lengthColumn, layoutBatchsize, u, wss, wds):
+    def eveluate(self, loader, lengthRow, lengthColumn, layoutBatchsize, u, wss, wds, ev=True):
         for co, idx_batch in enumerate(loader):
             #################################here is testing in evaluation mode######################################
 
                         
             ##################################here is testing in training mode######################################
             with torch.no_grad():
-                self.eval()
+                if ev:
+                    self.eval()
                 x_out, edge_attr_out, u_out = self.forward(idx_batch.x, idx_batch.edge_index, idx_batch.edge_attr, u[idx_batch.y], idx_batch)
-                self.train()
+                if ev:
+                    self.train()
                 #x_out2, edge_attr_out2, u_out2 = self.forward(idx_batch.x, idx_batch.edge_index, idx_batch.edge_attr, u[idx_batch.y], idx_batch)
                         
                         
